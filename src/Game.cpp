@@ -3,31 +3,37 @@
 
 Game::Game() : rm(ResourceManager::getInstance()) {
     // Load window configurations
-    if (!rm.loadJsonConfig("../config.json")) {
+    if (!rm.loadJsonConfig("../../config.json")) {
         std::cerr << "Creating Window Error: Cannot open JSON file.\n" << std::endl;
         exit(-1);
     }
     width = rm.resolution[0];
     height = rm.resolution[1];
     frameRate = rm.frameRate;
+    antiAliasingEnabled = rm.antiAliasingEnabled;
     isFullscreen = rm.isFullscreen;
     verticalSync = rm.verticalSync;
+    if (antiAliasingEnabled) {
+        settings.antiAliasingLevel = rm.antiAliasingLevel;
+    }
 
     // Create the window
     if (isFullscreen) {
         window.create(sf::VideoMode({width, height}),
                       title, sf::Style::Default,
-                      sf::State::Fullscreen);
+                      sf::State::Fullscreen,
+                      settings);
     } else {
         window.create(sf::VideoMode({width, height}),
                       title, sf::Style::Default,
-                      sf::State::Windowed);
+                      sf::State::Windowed,
+                      settings);
     }
 
     // Call these once creating the window
     window.setVerticalSyncEnabled(verticalSync);
     window.setFramerateLimit(frameRate);
-    if (!icon.loadFromFile("../images/icon.png")) {
+    if (!icon.loadFromFile("../../images/icon.png")) {
         std::cerr << "Load Icon image error.\n" << std::endl;
     }
     window.setIcon(icon);
@@ -55,8 +61,19 @@ void Game::setMenu(std::unique_ptr<Menu> menu) {
 
 
 void Game::executeGame() {
+    sf::Clock clock;
+    double starting = 0.0001;
+
     // Game Loop: stops when window is not open
     while (window.isOpen()) {
+        // Track frames per second info
+        double ending = clock.getElapsedTime().asSeconds();
+        double dt = ending - starting;
+        starting = ending;
+        // Display frames per second info in window bar
+        std::string FPS = std::to_string(int (1 / dt));
+        window.setTitle(title + " | FPS: " + FPS);
+
         // Process events
         while (const std::optional event = window.pollEvent()) {
             // Close window: exit
@@ -64,7 +81,7 @@ void Game::executeGame() {
                 window.close();
             // Handle other window input
             else
-                currentMenu->handleUserInput(*event);
+                 if (currentMenu->handleUserInput(*event)) window.close();
         }
 
         window.clear();             // Clear screen
