@@ -1,7 +1,6 @@
 #pragma once
 #include "Menu.hpp"
-#include "Game.hpp"
-
+#include "../core/Game.hpp"
 
 
 class StartUp : public Menu {
@@ -12,7 +11,9 @@ public:
     void render(sf::RenderWindow& window) override;
 
 private:
-    sf::RectangleShape shape;
-    sf::Texture texture;
+    sf::RectangleShape startButton;
+    sf::Texture background;
+    sf::Clock flashClock;
+    bool flash = false;
     ResourceManager& rm;
 };

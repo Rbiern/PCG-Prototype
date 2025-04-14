@@ -3,7 +3,6 @@
 #include <memory>
 #include <SFML/Graphics.hpp>
 
-
 class Game;
 
 // Abstract class

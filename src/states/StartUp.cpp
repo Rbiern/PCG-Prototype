@@ -2,15 +2,14 @@
 
 
 StartUp::StartUp() : rm(ResourceManager::getInstance()) {
-    if (!texture.loadFromFile("../../images/Loading Screen.png", false, sf::IntRect({0, 0}, {1280, 720})))
-        std::cout << "Error" << std::endl;
+    background = rm.getTexture("../../images/Loading Screen.png");
 
-    shape.setSize(sf::Vector2f(320, 17));
-    float height = (720.f * 0.962f) - shape.getSize().y;
-    float width = (1280.f * 0.5f) - (shape.getSize().x / 2.f);
+    startButton.setSize(sf::Vector2f(320, 17));
+    float height = (720.f * 0.962f) - startButton.getSize().y;
+    float width = (1280.f * 0.5f) - (startButton.getSize().x / 2.f);
 
-    shape.setPosition(sf::Vector2f(width, height));
-    shape.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
+    startButton.setPosition(sf::Vector2f(width, height));
+    startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
 }
 
 
@@ -22,7 +21,8 @@ bool StartUp::handleUserInput(const sf::Event &event) {
         }
     } else if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseButtonPressed->button == sf::Mouse::Button::Left) {
-            if (shape.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+            if (startButton.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                std::cout << "Button was clicked!" << std::endl;
                 game->setMenu(std::make_unique<LevelSelection>());
             }
         }
@@ -31,13 +31,21 @@ bool StartUp::handleUserInput(const sf::Event &event) {
 }
 
 
-void StartUp::render(sf::RenderWindow &window) {
-    sf::Sprite sprite(texture);
-    window.draw(sprite);
-    window.draw(shape);
+void StartUp::menuActionUpdate() {
+    if (flashClock.getElapsedTime().asMilliseconds() >= 650) {
+        flash = !flash;
+        flashClock.restart();
+
+        if (flash)
+            startButton.setFillColor(sf::Color::White); // flash white
+        else
+            startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E)); // return to green
+    }
 }
 
 
-void StartUp::menuActionUpdate() {
-
+void StartUp::render(sf::RenderWindow &window) {
+    sf::Sprite sprite(background);
+    window.draw(sprite);
+    window.draw(startButton);
 }

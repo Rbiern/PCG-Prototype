@@ -25,7 +25,7 @@ Game::Game() : rm(ResourceManager::getInstance()) {
                       settings);
     } else {
         window.create(sf::VideoMode({width, height}),
-                      title, sf::Style::Default,
+                      title, sf::Style::Close,
                       sf::State::Windowed,
                       settings);
     }
@@ -85,6 +85,7 @@ void Game::executeGame() {
         }
 
         window.clear();             // Clear screen
+        currentMenu->menuActionUpdate();
         currentMenu->render(window);// Window state
         window.display();           // Update the window
     }

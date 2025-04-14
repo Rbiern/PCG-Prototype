@@ -2,13 +2,19 @@
 #include <memory>
 #include <SFML/Graphics.hpp>
 #include "ResourceManager.hpp"
-#include "Menu.hpp"
-#include "StartUp.hpp"
-#include "LevelSelection.hpp"
-#include "Level.hpp"
+#include "../states/Menu.hpp"
+#include "../states/StartUp.hpp"
+#include "../states/LevelSelection.hpp"
+#include "../states/Level.hpp"
 
 
 class Game {
+public:
+    Game();                                         // Constructor
+    ~Game();                                        // Destructor
+    void setMenu(std::unique_ptr<Menu> menu);       // Setter if you want to change the current menu
+    void executeGame();                             // Main loop function
+
 private:
     // Window setup
     sf::RenderWindow window;
@@ -27,10 +33,4 @@ private:
 
     // Other
     ResourceManager& rm;
-
-public:
-    Game();                                         // Constructor
-    ~Game();                                        // Destructor
-    void setMenu(std::unique_ptr<Menu> menu);       // Setter if you want to change the current menu
-    void executeGame();                             // Main loop function
 };
