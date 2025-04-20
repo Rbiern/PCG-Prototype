@@ -2,60 +2,11 @@
 
 
 Level::Level() : rm(ResourceManager::getInstance()) {
-    pauseButton = rm.getTexture("../../images/pause.png");
-    towerCountIcon = rm.getTexture("../../images/tower.png");
-    remainingEnemiesIcon = rm.getTexture("../../images/e.png");
-    font = rm.getFont();
-
-    towerCountText = new sf::Text(font, "Tower Count: " + std::to_string(playerTowerCount), 26);
-    towerCountText->setStyle(sf::Text::Bold);
-    towerCountText->setFillColor(sf::Color::Black);
-    towerCountText->setOutlineColor(sf::Color::White);
-    towerCountText->setOutlineThickness(1.f);
-    towerCountText->setPosition({310.f + 33.f + 10.f, 22.f});
-
-    remainingText = new sf::Text(font, "Remaining Enemies: " + std::to_string(remainingEnemies), 26);
-    remainingText->setStyle(sf::Text::Bold);
-    remainingText->setFillColor(sf::Color::Black);
-    remainingText->setOutlineColor(sf::Color::White);
-    remainingText->setOutlineThickness(1.f);
-    remainingText->setPosition({542.f + 30.f + 10.f, 22.f});
-
-
-    pauseButtonSprite = new sf::Sprite(pauseButton);
-    {
-        sf::Vector2u size = pauseButton.getSize();
-        float scaleX = 50.f / size.x;
-        float scaleY = 50.f / size.y;
-        pauseButtonSprite->setScale({scaleX, scaleY});
+    if (!rm.loadTowerData("../../towers.json")) {
+        std::cerr << "Creating UI Error: Cannot open JSON file.\n" << std::endl;
+        exit(-1);
     }
-    pauseButtonSprite->setPosition({25.f, 25.f});
-
-    towerCountIconSprite = new sf::Sprite(towerCountIcon);
-    {
-        sf::Vector2u size = towerCountIcon.getSize();
-        float scaleX = 33.f / size.x;
-        float scaleY = 33.f / size.y;
-        towerCountIconSprite->setScale({scaleX, scaleY});
-    }
-    towerCountIconSprite->setPosition({310.f, 22.f});
-
-    remainingEnemiesIconSprite = new sf::Sprite(remainingEnemiesIcon);
-    {
-        sf::Vector2u size = remainingEnemiesIcon.getSize();
-        float scaleX = 30.f / size.x;
-        float scaleY = 30.f / size.y;
-        remainingEnemiesIconSprite->setScale({scaleX, scaleY});
-    }
-    remainingEnemiesIconSprite->setPosition({542.f, 25.f});
-
-
-    divider.setSize({6.f, 33.f});
-    divider.setFillColor(sf::Color::White);
-    divider.setPosition({526.f, 22.f});
-
-
-
+    // List of coords to place tower selection cards on panel
     std::array<sf::Vector2f, 8> uiCoords = {
             sf::Vector2f(1102.f, 615.f),
             sf::Vector2f(1194.f, 615.f),
@@ -66,119 +17,158 @@ Level::Level() : rm(ResourceManager::getInstance()) {
             sf::Vector2f(1102.f, 316.f),
             sf::Vector2f(1194.f, 316.f)
     };
-
-    sf::Color blueColor(0x12, 0x94, 0xD3);  // #1294D3
-    sf::Color greenColor(0x20, 0x9F, 0x37); // #209F37
-    sf::Color yellowColor(0xF1, 0xCE, 0x00); // #F1CE00
-    sf::Color redColor(0xFF, 0x00, 0x00);   // #FF0000
-
-    int i = 0;
-    towerSelection[i] = new PlayerCard(uiCoords[0].x, uiCoords[0].y, 12, blueColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/healer1.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-    towerSelection[i] = new PlayerCard(uiCoords[1].x, uiCoords[1].y, 12, redColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/range3.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-    towerSelection[i] = new PlayerCard(uiCoords[2].x, uiCoords[2].y, 10, redColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/range1.png"));
-    towerSelection[i++]->towerShape.setSize({110, 110});
-
-    towerSelection[i] = new PlayerCard(uiCoords[3].x, uiCoords[3].y, 18, redColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/range2.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-    towerSelection[i] = new PlayerCard(uiCoords[4].x, uiCoords[4].y, 12, greenColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/defense1.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-    towerSelection[i] = new PlayerCard(uiCoords[5].x, uiCoords[5].y, 12, greenColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/defense2.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-    towerSelection[i] = new PlayerCard(uiCoords[6].x, uiCoords[6].y, 17, yellowColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/fighter1.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-    towerSelection[i] = new PlayerCard(uiCoords[7].x, uiCoords[7].y, 8, yellowColor);
-    towerSelection[i]->towerShape.setTexture(&rm.getTexture("../../images/fighter2.png"));
-    towerSelection[i++]->towerShape.setSize({135, 135});
-
-
-    bool pauseFlag = false;
-    playerTowerCount = 0;
-    gold = 12;
-    remainingEnemies = 0;
-    hp = 200;
-    waveCount = 1;
+    // List of all tower names from the JSON
+    std::array<std::string, 8> towerNames = {
+            "o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8"
+    };
+    for (int i = 0; i < 8; ++i) {
+        towerSelection[i] = new PlayerCard(uiCoords[i].x, uiCoords[i].y, towerNames[i]);
+    }
+    // Flags
+    pauseFlag = false;
+    exitFlag = false;
+    isDragging = false;
 }
 
 
 Level::~Level() {
-    delete pauseButtonSprite;
-    delete towerCountIconSprite;
-    delete remainingEnemiesIconSprite;
-    delete towerCountText;
-    delete remainingText;
-    for (int i = 0; i < 8; ++i) {
-        delete towerSelection[i];
+    for (auto & i : towerSelection) {
+        delete i;
     }
 }
 
 
 bool Level::handleUserInput(const sf::Event &event) {
+    /** Check for keyboard input */
     if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
         if (keyPressed->scancode == sf::Keyboard::Scan::Escape) {
-            std::cout << "escape\n";
-            game->setMenu(std::make_unique<LevelSelection>());
+            exitFlag = !exitFlag;
+            hud.enablePopUp();
         }
-    } else if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+    }
+    /** Check for mouse input */
+    else if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+        mouseButtonPress = {mouseButtonPressed->position.x, mouseButtonPressed->position.y};
+        if (gameField.isTowerClick(mouseButtonPress)) {
+            panel.isVisible = !(panel.isVisible);
+        }
+        if (panel.isVisible) {
+            if (panel.deleteSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                gameField.deletePlayerTower();
+                panel.isVisible = false;
+            }
+            if (panel.directionSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                gameField.updateTowerDir();
+                std::cout << "Button was clicked!" << std::endl;
+            }
+        }
+        // Exit button
         if (panel.exitSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
             std::cout << "Button was clicked!" << std::endl;
+            exitFlag = true;
+            hud.enablePopUp();
         }
-        if (pauseButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+        // Pause and resume button
+        if (hud.pauseButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
             std::cout << "Button was clicked!" << std::endl;
             if (!pauseFlag) {
                 pauseFlag = true;
-                pauseButtonSprite->setTexture(rm.getTexture("../../images/resume.png"));
+                hud.pauseButtonSprite->setTexture(rm.getTexture("../../images/resume.png"));
             } else {
                 pauseFlag = false;
-                pauseButtonSprite->setTexture(rm.getTexture("../../images/pause.png"));
+                hud.pauseButtonSprite->setTexture(rm.getTexture("../../images/pause.png"));
+            }
+        }
+        // Exit game pop up
+        if (exitFlag) {
+            if (hud.yesButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                game->setMenu(std::make_unique<LevelSelection>());
+                return false;
+            }
+            if (hud.noButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                exitFlag = false;
+                hud.enablePopUp();
+            }
+        }
+        // Player cards
+        for (int i = 0; i < 8; i++) {
+            if (towerSelection[i]->backgroundRect.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                currTowerSel = i;
+                isDragging = true;
+                draggedSprite = new sf::Sprite(rm.getTexture(towerSelection[i]->imagePath));
+                setScale();
             }
         }
     }
+    /** Check if mouse is moving and dragging */
+    if (isDragging && draggedSprite != nullptr) {
+        if (const auto* mouseButtonMove = event.getIf<sf::Event::MouseMoved>()) {
+            sf::Vector2f newMousePos(static_cast<float>(mouseButtonMove->position.x), static_cast<float>(mouseButtonMove->position.y));
+            draggedSprite->setPosition(newMousePos);
+        }
+    }
+    /** Check if mouse stopped dragging */
+    if (const auto* mouseButtonReleased = event.getIf<sf::Event::MouseButtonReleased>()) {
+        if (!isDragging) {
+            goto end_if;
+        } else {
+            isDragging = false;
+        }
+
+        gridConfig data = rm.getGridData();
+        sf::Vector2f dropPos(static_cast<float>(mouseButtonReleased->position.x), static_cast<float>(mouseButtonReleased->position.y));
+        int col = static_cast<int>(dropPos.x / data.squareWidth);
+        int row = static_cast<int>(dropPos.y / data.squareHeight);
+
+        std::cout << "Dropped at grid cell: <" << col << ", " << row << ">" << std::endl;
+        if (dropPos.x >= 0.f && dropPos.x < data.gridWidth && dropPos.y >= 0.f && dropPos.y < data.gridHeight) {
+            gameField.addPlayerTower(towerSelection[currTowerSel]->imagePath, draggedSprite->getScale(), {row, col});
+        }
+        delete draggedSprite;
+    }
+    end_if:
+
     return false;
 }
 
 
-void Level::menuActionUpdate() {
-
+void Level::menuActionUpdate(float delta) {
+    if (pauseFlag) {
+        return;
+    }
+    gameField.run(delta);
 }
 
 
 void Level::render(sf::RenderWindow &window) {
     // Update the counters
-    towerCountText->setString("Tower Count: " + std::to_string(playerTowerCount));
-    remainingText->setString("Remaining Enemies: " + std::to_string(remainingEnemies));
-    panel.setRound(waveCount);
-
-    // Draw the game gird
+    panel.setRoundNumber(gameField.getWaveStat());
+    panel.setGoldNumber(gameField.getGoldStat());
+    panel.setHealthNumber(gameField.getHPStat());
+    panel.setRemainingNumber(gameField.getRemainingEnemiesStat());
+    // Draw the game grid
     gameField.renderGameFeild(window);
-
-    // Draw UI elements on top of the game grid
-    window.draw(*pauseButtonSprite);
-    window.draw(*towerCountIconSprite);
-    window.draw(*remainingEnemiesIconSprite);
-    window.draw(divider);
-    window.draw(*towerCountText);
-    window.draw(*remainingText);
-
-    // Draw panel left of game grid
-    panel.drawSelectionPanel(window);
-
+    panel.drawPanel(window);
     // Draw player cards on top of panel
     for (auto & i : towerSelection) {
         i->drawPlayerCard(window);
     }
+    if (isDragging) {
+        window.draw(*draggedSprite);
+    }
+    hud.drawHUD(window);
+}
+
+
+void Level::setScale() {
+    gridConfig data = rm.getGridData();
+    // Set origin to center so scaling/positioning is smooth
+    sf::FloatRect bounds = draggedSprite->getLocalBounds();
+    draggedSprite->setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
+    // Calculate scaling to preserve aspect ratio and fit within the cell
+    float scaleX = data.squareWidth / bounds.size.x;
+    float scaleY = data.squareHeight / bounds.size.y;
+    float finalScale = std::min(scaleX, scaleY); // Use the smaller scale factor
+    // Set scale of sprite to be dragged around
+    draggedSprite->setScale({finalScale, finalScale});
 }

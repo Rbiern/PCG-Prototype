@@ -4,24 +4,26 @@
 
 
 class LevelHUD {
+    friend class Level;
 public:
     LevelHUD();
     ~LevelHUD();
-    void setTowerCountText(int count);
-    void setRemainingText(int count);
+    void enablePopUp();
     void drawHUD(sf::RenderWindow &window);
 
-    sf::Font font;
-    sf::Text* towerCountText;
-    sf::Text* remainingText;
-    sf::RectangleShape divider;
-    sf::Texture pauseButton;
-    sf::Texture towerCountIcon;
-    sf::Texture remainingEnemiesIcon;
-    sf::Sprite* pauseButtonSprite = nullptr;
-    sf::Sprite* towerCountIconSprite = nullptr;
-    sf::Sprite* remainingEnemiesIconSprite = nullptr;
-
 private:
+    sf::RectangleShape overlay;
+
+    sf::Texture pauseButton;
+    sf::Texture popUp;
+    sf::Texture yesButton;
+    sf::Texture noButton;
+
+    sf::Sprite* pauseButtonSprite;
+    sf::Sprite* popUpSprite;
+    sf::Sprite* yesButtonSprite;
+    sf::Sprite* noButtonSprite;
+
+    bool enableFlag;
     ResourceManager& rm;
 };

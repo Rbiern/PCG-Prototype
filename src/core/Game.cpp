@@ -2,22 +2,24 @@
 
 
 Game::Game() : rm(ResourceManager::getInstance()) {
-    // Load window configurations
+    // Load window configurations from json file
     if (!rm.loadJsonConfig("../../config.json")) {
         std::cerr << "Creating Window Error: Cannot open JSON file.\n" << std::endl;
         exit(-1);
     }
-    width = rm.resolution[0];
-    height = rm.resolution[1];
-    frameRate = rm.frameRate;
-    antiAliasingEnabled = rm.antiAliasingEnabled;
-    isFullscreen = rm.isFullscreen;
-    verticalSync = rm.verticalSync;
+    windowConfig windowInfo = rm.getWindowData();
+    title = "Prototype";
+    width = windowInfo.resolution[0];
+    height = windowInfo.resolution[1];
+    frameRate = windowInfo.frameRate;
+    antiAliasingEnabled = windowInfo.antiAliasingEnabled;
+    isFullscreen = windowInfo.isFullscreen;
+    verticalSync = windowInfo.verticalSync;
     if (antiAliasingEnabled) {
-        settings.antiAliasingLevel = rm.antiAliasingLevel;
+        settings.antiAliasingLevel = windowInfo.antiAliasingLevel;
     }
 
-    // Create the window
+    // Create window
     if (isFullscreen) {
         window.create(sf::VideoMode({width, height}),
                       title, sf::Style::Default,
@@ -29,8 +31,6 @@ Game::Game() : rm(ResourceManager::getInstance()) {
                       sf::State::Windowed,
                       settings);
     }
-
-    // Call these once creating the window
     window.setVerticalSyncEnabled(verticalSync);
     window.setFramerateLimit(frameRate);
     if (!icon.loadFromFile("../../images/icon.png")) {
@@ -63,6 +63,7 @@ void Game::setMenu(std::unique_ptr<Menu> menu) {
 void Game::executeGame() {
     sf::Clock clock;
     double starting = 0.0001;
+    float levelDT;
 
     // Game Loop: stops when window is not open
     while (window.isOpen()) {
@@ -74,6 +75,11 @@ void Game::executeGame() {
         std::string FPS = std::to_string(int (1 / dt));
         window.setTitle(title + " | FPS: " + FPS);
 
+        // - restart() returns the time since the last restart (or since creation)
+        //   and resets the clock for the next frame.
+        if (!pauseFlag)
+            levelDT = deltaTime.restart().asSeconds();  // dt = “delta time” in seconds
+
         // Process events
         while (const std::optional event = window.pollEvent()) {
             // Close window: exit
@@ -83,9 +89,8 @@ void Game::executeGame() {
             else
                  if (currentMenu->handleUserInput(*event)) window.close();
         }
-
         window.clear();             // Clear screen
-        currentMenu->menuActionUpdate();
+        currentMenu->menuActionUpdate(levelDT);
         currentMenu->render(window);// Window state
         window.display();           // Update the window
     }

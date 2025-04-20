@@ -4,11 +4,13 @@
 
 
 class PlayerCard {
+    friend class Level;
 public:
-    PlayerCard(float baseX, float baseY, int cost, sf::Color color);
+    PlayerCard(float baseX, float baseY, const std::string& name);
     ~PlayerCard();
     void drawPlayerCard(sf::RenderWindow& window);
 
+private:
     sf::Font font;
     sf::Text* costText;
 
@@ -23,6 +25,6 @@ public:
     sf::Texture towerClass;
     sf::Texture tower;
 
-private:
+    std::string imagePath;
     ResourceManager& rm;
 };

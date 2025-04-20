@@ -1,18 +1,25 @@
 #include "PlayerCard.hpp"
 
 
-PlayerCard::PlayerCard(float baseX, float baseY, int cost, sf::Color color) : rm(ResourceManager::getInstance()) {
+PlayerCard::PlayerCard(float baseX, float baseY, const std::string& name) : rm(ResourceManager::getInstance()) {
+    TowerData towerData = rm.getTowerDataByName(name);
+    int cost = towerData.cost;
+    imagePath = towerData.imagePath;
+
     font = rm.getFont();
     sf::Color blueColor(0x12, 0x94, 0xD3);  // #1294D3
     sf::Color greenColor(0x20, 0x9F, 0x37); // #209F37
     sf::Color yellowColor(0xF1, 0xCE, 0x00); // #F1CE00
     sf::Color redColor(0xFF, 0x00, 0x00);   // #FF0000
-    if (color == blueColor) towerClass = rm.getTexture("../../images/support.png");
-    else if (color == greenColor) towerClass = rm.getTexture("../../images/defense.png");
-    else if (color == yellowColor) towerClass = rm.getTexture("../../images/melee.png");
-    else towerClass = rm.getTexture("../../images/range.png");
+    sf::Color color;
 
-    tower = rm.getTexture("../../images/mans.png");
+    if ("Support" == towerData.towerClass) color = blueColor;
+    else if ("Range" == towerData.towerClass) color = redColor;
+    else if ("Defense" == towerData.towerClass) color = greenColor;
+    else color = yellowColor;
+
+    towerClass = rm.getTexture(towerData.classImage);
+    tower = rm.getTexture(towerData.imagePath);
 
     // transparent background
     backgroundRect.setSize(sf::Vector2f(82.f, 85.f));

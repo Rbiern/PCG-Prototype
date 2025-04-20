@@ -3,24 +3,9 @@
 
 LevelHUD::LevelHUD() : rm(ResourceManager::getInstance()) {
     pauseButton = rm.getTexture("../../images/pause.png");
-    towerCountIcon = rm.getTexture("../../images/tower.png");
-    remainingEnemiesIcon = rm.getTexture("../../images/e.png");
-    font = rm.getFont();
-
-    towerCountText = new sf::Text(font, "Tower Count: ", 26);
-    towerCountText->setStyle(sf::Text::Bold);
-    towerCountText->setFillColor(sf::Color::Black);
-    towerCountText->setOutlineColor(sf::Color::White);
-    towerCountText->setOutlineThickness(1.f);
-    towerCountText->setPosition({310.f + 33.f + 10.f, 22.f});
-
-    remainingText = new sf::Text(font, "Remaining Enemies: ", 26);
-    remainingText->setStyle(sf::Text::Bold);
-    remainingText->setFillColor(sf::Color::Black);
-    remainingText->setOutlineColor(sf::Color::White);
-    remainingText->setOutlineThickness(1.f);
-    remainingText->setPosition({542.f + 30.f + 10.f, 22.f});
-
+    popUp = rm.getTexture("../../images/popup.png");
+    yesButton = rm.getTexture("../../images/yes.png");
+    noButton = rm.getTexture("../../images/no.png");
 
     pauseButtonSprite = new sf::Sprite(pauseButton);
     {
@@ -31,55 +16,60 @@ LevelHUD::LevelHUD() : rm(ResourceManager::getInstance()) {
     }
     pauseButtonSprite->setPosition({25.f, 25.f});
 
-    towerCountIconSprite = new sf::Sprite(towerCountIcon);
+    popUpSprite = new sf::Sprite(popUp);
     {
-        sf::Vector2u size = towerCountIcon.getSize();
-        float scaleX = 33.f / size.x;
-        float scaleY = 33.f / size.y;
-        towerCountIconSprite->setScale({scaleX, scaleY});
+        sf::Vector2u size = popUp.getSize();
+        float scaleX = 250.f / size.x;
+        float scaleY = 150.f / size.y;
+        popUpSprite->setScale({scaleX, scaleY});
     }
-    towerCountIconSprite->setPosition({310.f, 22.f});
+    popUpSprite->setPosition({515, 285});
 
-    remainingEnemiesIconSprite = new sf::Sprite(remainingEnemiesIcon);
+    yesButtonSprite = new sf::Sprite(yesButton);
     {
-        sf::Vector2u size = remainingEnemiesIcon.getSize();
-        float scaleX = 30.f / size.x;
-        float scaleY = 30.f / size.y;
-        remainingEnemiesIconSprite->setScale({scaleX, scaleY});
+        sf::Vector2u size = yesButton.getSize();
+        float scaleX = 46.f / size.x;
+        float scaleY = 46.f / size.y;
+        yesButtonSprite->setScale({scaleX, scaleY});
     }
-    remainingEnemiesIconSprite->setPosition({542.f, 25.f});
+    yesButtonSprite->setPosition({popUpSprite->getPosition().x + 56.f, popUpSprite->getPosition().y + 66.f});
 
+    noButtonSprite = new sf::Sprite(noButton);
+    {
+        sf::Vector2u size = noButton.getSize();
+        float scaleX = 46.f / size.x;
+        float scaleY = 46.f / size.y;
+        noButtonSprite->setScale({scaleX, scaleY});
+    }
+    noButtonSprite->setPosition({popUpSprite->getPosition().x + 151.f, popUpSprite->getPosition().y + 66.f});
 
-    divider.setSize({6.f, 33.f});
-    divider.setFillColor(sf::Color::White);
-    divider.setPosition({526.f, 22.f});
+    overlay.setSize({1280.f, 720.f});
+    overlay.setPosition({0.f, 0.f});
+    overlay.setFillColor(sf::Color(217, 217, 217, 89));
+
+    enableFlag = false;
 }
 
 
 LevelHUD::~LevelHUD() {
     delete pauseButtonSprite;
-    delete towerCountIconSprite;
-    delete remainingEnemiesIconSprite;
-    delete towerCountText;
-    delete remainingText;
+    delete popUpSprite;
+    delete noButtonSprite;
+    delete yesButtonSprite;
 }
 
 
-void LevelHUD::setTowerCountText(int count) {
-    towerCountText->setString("Tower Count: " + std::to_string(count));
-}
-
-
-void LevelHUD::setRemainingText(int count) {
-    remainingText->setString("Remaining Enemies: " + std::to_string(count));
+void LevelHUD::enablePopUp() {
+    enableFlag = !(enableFlag);
 }
 
 
 void LevelHUD::drawHUD(sf::RenderWindow &window) {
     window.draw(*pauseButtonSprite);
-    window.draw(*towerCountIconSprite);
-    window.draw(*remainingEnemiesIconSprite);
-    window.draw(divider);
-    window.draw(*towerCountText);
-    window.draw(*remainingText);
+    if (enableFlag) {
+        window.draw(overlay);
+        window.draw(*popUpSprite);
+        window.draw(*noButtonSprite);
+        window.draw(*yesButtonSprite);
+    }
 }

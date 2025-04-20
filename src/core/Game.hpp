@@ -13,13 +13,14 @@ public:
     Game();                                         // Constructor
     ~Game();                                        // Destructor
     void setMenu(std::unique_ptr<Menu> menu);       // Setter if you want to change the current menu
+    void toggleClock();
     void executeGame();                             // Main loop function
 
 private:
     // Window setup
     sf::RenderWindow window;
     sf::ContextSettings settings;
-    std::string title = "Thesis";
+    std::string title;
     sf::Image icon;
     unsigned int width;
     unsigned int height;
@@ -28,8 +29,10 @@ private:
     bool isFullscreen;
     bool verticalSync;
 
-    // Window state
+    // Window state and actions
     std::unique_ptr<Menu> currentMenu;
+    sf::Clock deltaTime;
+    bool pauseFlag = false;
 
     // Other
     ResourceManager& rm;

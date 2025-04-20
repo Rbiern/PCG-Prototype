@@ -4,20 +4,35 @@
 LevelSelection::LevelSelection(): rm(ResourceManager::getInstance()) {
     background = rm.getTexture("../../images/Home.png");
     exitButton = rm.getTexture("../../images/exit.png");
+    playButton = rm.getTexture("../../images/playbutton.png");
+
+    backgroundSprite = new sf::Sprite(background);
+    backgroundSprite->setPosition({0, 0});
 
     exitButtonSprite = new sf::Sprite(exitButton);
+    {
+        sf::Vector2u size = exitButton.getSize();
+        float scaleX = 152.f / size.x;
+        float scaleY = 47.f  / size.y;
+        exitButtonSprite->setScale({scaleX, scaleY});
+    }
     exitButtonSprite->setPosition({1094.f, 35.f});
 
-    playButton.setSize(sf::Vector2f(100, 100));
-    float height = (720.f * 1.f) - playButton.getSize().y;
-    float width = (1280.f * 0.5f) - (playButton.getSize().x / 2.f);
-    playButton.setPosition(sf::Vector2f(width, height));
-    playButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
+    playButtonSprite = new sf::Sprite(playButton);
+    {
+        sf::Vector2u size = playButton.getSize();
+        float scaleX = 152.f / size.x;
+        float scaleY = 47.f  / size.y;
+        playButtonSprite->setScale({scaleX, scaleY});
+    }
+    playButtonSprite->setPosition({565, 600});
 }
 
 
 LevelSelection::~LevelSelection() {
+    delete backgroundSprite;
     delete exitButtonSprite;
+    delete playButtonSprite;
 }
 
 
@@ -30,9 +45,11 @@ bool LevelSelection::handleUserInput(const sf::Event &event) {
         if (mouseButtonPressed->button == sf::Mouse::Button::Left) {
             if (exitButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
                 game->setMenu(std::make_unique<StartUp>());
+                return false;
             }
-            if (playButton.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+            if (playButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
                 game->setMenu(std::make_unique<Level>());
+                return false;
             }
         }
     }
@@ -40,14 +57,11 @@ bool LevelSelection::handleUserInput(const sf::Event &event) {
 }
 
 
-void LevelSelection::menuActionUpdate() {
-
-}
+void LevelSelection::menuActionUpdate(float delta) { }
 
 
 void LevelSelection::render(sf::RenderWindow &window) {
-    sf::Sprite sprite(background);
-    window.draw(sprite);
-    window.draw(playButton);
+    window.draw(*backgroundSprite);
+    window.draw(*playButtonSprite);
     window.draw(*exitButtonSprite);
 }

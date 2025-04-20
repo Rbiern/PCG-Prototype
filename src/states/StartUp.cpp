@@ -4,26 +4,28 @@
 StartUp::StartUp() : rm(ResourceManager::getInstance()) {
     background = rm.getTexture("../../images/Loading Screen.png");
 
-    startButton.setSize(sf::Vector2f(320, 17));
+    startButton.setSize(sf::Vector2f(320, 30));
     float height = (720.f * 0.962f) - startButton.getSize().y;
     float width = (1280.f * 0.5f) - (startButton.getSize().x / 2.f);
 
     startButton.setPosition(sf::Vector2f(width, height));
     startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
+
+    flash = false;
+    flashTimer = 0.f;
 }
 
 
 bool StartUp::handleUserInput(const sf::Event &event) {
     if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
         if (keyPressed->scancode == sf::Keyboard::Scan::Escape) {
-            std::cout << "escape\n";
             return true;
         }
     } else if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseButtonPressed->button == sf::Mouse::Button::Left) {
             if (startButton.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
-                std::cout << "Button was clicked!" << std::endl;
                 game->setMenu(std::make_unique<LevelSelection>());
+                return false;
             }
         }
     }
@@ -31,15 +33,17 @@ bool StartUp::handleUserInput(const sf::Event &event) {
 }
 
 
-void StartUp::menuActionUpdate() {
-    if (flashClock.getElapsedTime().asMilliseconds() >= 650) {
-        flash = !flash;
-        flashClock.restart();
+void StartUp::menuActionUpdate(float delta) {
+    flashTimer += delta;
 
-        if (flash)
-            startButton.setFillColor(sf::Color::White); // flash white
-        else
-            startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E)); // return to green
+    if (flashTimer >= 0.65f) { // 650ms or 0.65 seconds
+        flash = !flash;
+        flashTimer = 0.f;
+    }
+    if (flash) {
+        startButton.setFillColor(sf::Color::White);
+    }else {
+        startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
     }
 }
 

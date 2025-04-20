@@ -31,28 +31,20 @@ bool ResourceManager::loadJsonConfig(const std::string& filename) {
 //    std::cout << "Loaded JSON:\n" << j.dump(4) << std::endl;
 
     // Window fields
-    resolution[0] = j["resolution"][0];
-    resolution[1] = j["resolution"][1];
-    isFullscreen = j["isFullscreen"];
-    verticalSync = j["verticalSync"];
-    frameRate = j["frameRate"];
+    windowInfo.resolution[0] = j["resolution"][0];
+    windowInfo.resolution[1] = j["resolution"][1];
+    windowInfo.isFullscreen = j["isFullscreen"];
+    windowInfo.verticalSync = j["verticalSync"];
+    windowInfo.frameRate = j["frameRate"];
 
     const auto& aa = j["antiAliasingLevel"];
-    antiAliasingEnabled = aa["enabled"];
-    antiAliasingLevel = aa["level"];
+    windowInfo.antiAliasingEnabled = aa["enabled"];
+    windowInfo.antiAliasingLevel = aa["level"];
     // Load 'generators' map
     if (j.contains("generators") && j["generators"].is_object()) {
         for (auto& [key, value] : j["generators"].items()) {
             if (value.is_boolean()) {
                 generators[key] = value.get<bool>();
-            }
-        }
-    }
-    // Load 'inferenceEngine' map
-    if (j.contains("inferenceEngine") && j["inferenceEngine"].is_object()) {
-        for (auto& [key, value] : j["inferenceEngine"].items()) {
-            if (value.is_boolean()) {
-                inferenceEngine[key] = value.get<bool>();
             }
         }
     }
@@ -84,4 +76,37 @@ sf::Texture& ResourceManager::getTexture(const std::string& filePath) {
     }
     textures[filePath] = std::move(texture);
     return textures[filePath];
+}
+
+bool ResourceManager::loadTowerData(const std::string& jsonPath) {
+    std::ifstream file(jsonPath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open tower JSON file: " << jsonPath << std::endl;
+        return false;
+    }
+
+    nlohmann::json j;
+    file >> j;
+
+    for (const auto& tower : j["towers"]) {
+        TowerData data;
+        data.name = tower["name"];
+        data.imagePath = tower["imagePath"];
+        data.cost = tower["cost"];
+        data.towerClass = tower["class"];
+        data.classImage = tower["classImage"];
+
+        towerDataMap[data.name] = data;
+    }
+    return true;
+}
+
+TowerData ResourceManager::getTowerDataByName(const std::string& name) const {
+    auto it = towerDataMap.find(name);
+    if (it != towerDataMap.end()) {
+        return it->second;
+    }
+
+    std::cerr << "Tower not found: " << name << std::endl;
+    return TowerData{}; // return empty/default
 }
