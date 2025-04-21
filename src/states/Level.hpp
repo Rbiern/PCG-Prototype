@@ -27,7 +27,6 @@ private:
     PlayerCard* towerSelection[8];
     GameField gameField;
     // Input controls
-    sf::Vector2i mouseButtonPress;
     bool pauseFlag;
     bool exitFlag;
     bool isDragging;

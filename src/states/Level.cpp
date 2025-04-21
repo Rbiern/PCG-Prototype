@@ -47,56 +47,63 @@ bool Level::handleUserInput(const sf::Event &event) {
         }
     }
     /** Check for mouse input */
-    else if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
-        mouseButtonPress = {mouseButtonPressed->position.x, mouseButtonPressed->position.y};
-        if (gameField.isTowerClick(mouseButtonPress)) {
-            panel.isVisible = !(panel.isVisible);
-        }
+    if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+        sf::Vector2i pixelClick = {mouseButtonPressed->position.x, mouseButtonPressed->position.y};
+        sf::Vector2f worldClick = sf::Vector2f(pixelClick);  // or use mapPixelToCoords if you're using a view
+
+        bool clickedOnUI = false;
+        // Panel buttons
         if (panel.isVisible) {
-            if (panel.deleteSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+            if (panel.deleteSprite->getGlobalBounds().contains(worldClick)) {
                 gameField.deletePlayerTower();
                 panel.isVisible = false;
-            }
-            if (panel.directionSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+                clickedOnUI = true;
+            } else if (panel.directionSprite->getGlobalBounds().contains(worldClick)) {
                 gameField.updateTowerDir();
-                std::cout << "Button was clicked!" << std::endl;
+                clickedOnUI = true;
             }
         }
-        // Exit button
-        if (panel.exitSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
-            std::cout << "Button was clicked!" << std::endl;
+        // HUD and other UI buttons
+        if (panel.exitSprite->getGlobalBounds().contains(worldClick)) {
             exitFlag = true;
             hud.enablePopUp();
+            clickedOnUI = true;
         }
         // Pause and resume button
-        if (hud.pauseButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
-            std::cout << "Button was clicked!" << std::endl;
-            if (!pauseFlag) {
-                pauseFlag = true;
-                hud.pauseButtonSprite->setTexture(rm.getTexture("../../images/resume.png"));
-            } else {
-                pauseFlag = false;
-                hud.pauseButtonSprite->setTexture(rm.getTexture("../../images/pause.png"));
-            }
+        if (hud.pauseButtonSprite->getGlobalBounds().contains(worldClick)) {
+            pauseFlag = !pauseFlag;
+            hud.pauseButtonSprite->setTexture(rm.getTexture(pauseFlag ? "../../images/resume.png" : "../../images/pause.png"));
+            clickedOnUI = true;
         }
         // Exit game pop up
         if (exitFlag) {
-            if (hud.yesButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+            if (hud.yesButtonSprite->getGlobalBounds().contains(worldClick)) {
                 game->setMenu(std::make_unique<LevelSelection>());
                 return false;
             }
-            if (hud.noButtonSprite->getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+            if (hud.noButtonSprite->getGlobalBounds().contains(worldClick)) {
                 exitFlag = false;
                 hud.enablePopUp();
+                clickedOnUI = true;
             }
         }
-        // Player cards
+        // Player card selection (towers)
         for (int i = 0; i < 8; i++) {
-            if (towerSelection[i]->backgroundRect.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
+            if (towerSelection[i]->backgroundRect.getGlobalBounds().contains(worldClick)) {
                 currTowerSel = i;
                 isDragging = true;
                 draggedSprite = new sf::Sprite(rm.getTexture(towerSelection[i]->imagePath));
                 setScale();
+                clickedOnUI = true;
+            }
+        }
+        // Check if player clicked on tower
+        if (!clickedOnUI) {
+            bool clickedTower = gameField.isTowerClick(pixelClick);
+            if (clickedTower) { //show panel when a tower is selected (even a new one)
+                panel.isVisible = true;
+            } else {            // clicked on empty space
+                panel.isVisible = false;
             }
         }
     }
@@ -120,9 +127,10 @@ bool Level::handleUserInput(const sf::Event &event) {
         int col = static_cast<int>(dropPos.x / data.squareWidth);
         int row = static_cast<int>(dropPos.y / data.squareHeight);
 
-        std::cout << "Dropped at grid cell: <" << col << ", " << row << ">" << std::endl;
         if (dropPos.x >= 0.f && dropPos.x < data.gridWidth && dropPos.y >= 0.f && dropPos.y < data.gridHeight) {
-            gameField.addPlayerTower(towerSelection[currTowerSel]->imagePath, draggedSprite->getScale(), {row, col});
+            if (gameField.addPlayerTower(towerSelection[currTowerSel]->imagePath, draggedSprite->getScale(), {row, col})) {
+                panel.isVisible = true;
+            }
         }
         delete draggedSprite;
     }
@@ -136,7 +144,7 @@ void Level::menuActionUpdate(float delta) {
     if (pauseFlag) {
         return;
     }
-    gameField.run(delta);
+    gameField.update(delta);
 }
 
 
@@ -162,13 +170,11 @@ void Level::render(sf::RenderWindow &window) {
 
 void Level::setScale() {
     gridConfig data = rm.getGridData();
-    // Set origin to center so scaling/positioning is smooth
     sf::FloatRect bounds = draggedSprite->getLocalBounds();
     draggedSprite->setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
-    // Calculate scaling to preserve aspect ratio and fit within the cell
+
     float scaleX = data.squareWidth / bounds.size.x;
     float scaleY = data.squareHeight / bounds.size.y;
-    float finalScale = std::min(scaleX, scaleY); // Use the smaller scale factor
-    // Set scale of sprite to be dragged around
+    float finalScale = std::min(scaleX, scaleY);
     draggedSprite->setScale({finalScale, finalScale});
 }

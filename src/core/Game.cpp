@@ -52,7 +52,6 @@ Game::~Game() {
 
 
 void Game::setMenu(std::unique_ptr<Menu> menu) {
-    // Transfer ownership of 'menu' to 'currentMenu'
     currentMenu = std::move(menu);
     if (currentMenu) {
         currentMenu->setGame(this);
@@ -75,11 +74,7 @@ void Game::executeGame() {
         std::string FPS = std::to_string(int (1 / dt));
         window.setTitle(title + " | FPS: " + FPS);
 
-        // - restart() returns the time since the last restart (or since creation)
-        //   and resets the clock for the next frame.
-        if (!pauseFlag)
-            levelDT = deltaTime.restart().asSeconds();  // dt = “delta time” in seconds
-
+        levelDT = deltaTime.restart().asSeconds();
         // Process events
         while (const std::optional event = window.pollEvent()) {
             // Close window: exit

@@ -13,7 +13,6 @@ public:
     Game();                                         // Constructor
     ~Game();                                        // Destructor
     void setMenu(std::unique_ptr<Menu> menu);       // Setter if you want to change the current menu
-    void toggleClock();
     void executeGame();                             // Main loop function
 
 private:
