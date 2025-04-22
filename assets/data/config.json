@@ -1,0 +1,15 @@
+{
+  "resolution": [1280, 720],
+  "isFullscreen": false,
+  "verticalSync": false,
+  "frameRate": 60,
+  "antiAliasingLevel": {
+    "enabled": false,
+    "level": 8
+  },
+
+  "generators": {
+    "waveCollapseFunction": true,
+    "cellularAutomata": false
+  }
+}
