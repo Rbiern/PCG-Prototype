@@ -14,7 +14,7 @@ protected:
     sf::Texture texture;
     sf::Sprite* sprite;
     sf::Vector2f scale;
-    sf::Vector2i gridCoordinates;//[row, col]
+    sf::Vector2i gridCoordinates;
     std::string name;
     float actionSpeed;
     ResourceManager& rm;
@@ -22,6 +22,5 @@ protected:
 public:
     BaseEntity() : rm(ResourceManager::getInstance()) {}
     virtual ~BaseEntity() = default;
-    virtual void update(float deltaTime) = 0;
     virtual void render(sf::RenderWindow& window) = 0;
 };

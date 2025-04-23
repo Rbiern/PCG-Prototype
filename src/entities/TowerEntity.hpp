@@ -1,6 +1,7 @@
 #pragma once
 #include <set>
 #include "BaseEntity.hpp"
+#include "EnemyEntity.hpp"
 #include "../levels/tiles/Tile.hpp"
 
 
@@ -10,14 +11,18 @@ protected:
     bool isClicked;
     bool piercing;
     int attackDamage;
-    float attackCooldown;
+    float attackCoolDownTimer;
+    bool  isFlashing;
+    float flashTimer;
+    const float flashDuration = 0.1f;
+    sf::Texture secondTexture;
+    std::vector<sf::Vector2i> tileRange;
     std::vector<sf::RectangleShape> rangeTiles;
     std::vector<sf::RectangleShape> blockedRangeTiles;
 
 public:
     TowerEntity() = default;
-    virtual ~TowerEntity() = default;
-
+    ~TowerEntity() override = default;
     virtual bool OnClick(sf::Vector2i click) = 0;
     virtual void setUserInteraction(bool status) = 0;
     virtual bool isSelected() const = 0;
@@ -28,6 +33,5 @@ public:
     virtual void setDirection(orientation newDir) = 0;
     virtual orientation getDirection() = 0;
     virtual void computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid[12][18]) = 0;
+    virtual void update(float deltaTime, const std::vector<EnemyEntity*>& enemies) = 0;
 };
-
-

@@ -6,8 +6,6 @@
 #include "../ui/PlayerCard.hpp"
 #include "../levels/GameField.hpp"
 #include "../levels/tiles/Tile.hpp"
-#include "../levels/tiles/GrassTile.cpp"
-#include "../levels/tiles/WaterTile.cpp"
 
 
 class Level : public Menu {

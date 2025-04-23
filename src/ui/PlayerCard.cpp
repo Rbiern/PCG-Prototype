@@ -1,10 +1,11 @@
 #include "PlayerCard.hpp"
 
 
-PlayerCard::PlayerCard(float baseX, float baseY, const std::string& name) : rm(ResourceManager::getInstance()) {
-    TowerData towerData = rm.getTowerDataByName(name);
+PlayerCard::PlayerCard(float baseX, float baseY, const std::string& id) : rm(ResourceManager::getInstance()) {
+    TowerData towerData = rm.getTowerData(id);
+    towerId = id;
     int cost = towerData.cost;
-    imagePath = towerData.imagePath;
+    imagePath = towerData.imagePath_a;
 
     font = rm.getFont();
     sf::Color blueColor(0x12, 0x94, 0xD3);  // #1294D3
@@ -19,7 +20,7 @@ PlayerCard::PlayerCard(float baseX, float baseY, const std::string& name) : rm(R
     else color = yellowColor;
 
     towerClass = rm.getTexture(towerData.classImage);
-    tower = rm.getTexture(towerData.imagePath);
+    tower = rm.getTexture(towerData.imagePath_a);
 
     // transparent background
     backgroundRect.setSize(sf::Vector2f(82.f, 85.f));

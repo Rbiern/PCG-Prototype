@@ -18,11 +18,11 @@ Level::Level() : rm(ResourceManager::getInstance()) {
             sf::Vector2f(1194.f, 316.f)
     };
     // List of all tower names from the JSON
-    std::array<std::string, 8> towerNames = {
+    std::array<std::string, 8> id = {
             "o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8"
     };
     for (int i = 0; i < 8; ++i) {
-        towerSelection[i] = new PlayerCard(uiCoords[i].x, uiCoords[i].y, towerNames[i]);
+        towerSelection[i] = new PlayerCard(uiCoords[i].x, uiCoords[i].y, id[i]);
     }
     // Flags
     pauseFlag = false;
@@ -59,7 +59,7 @@ bool Level::handleUserInput(const sf::Event &event) {
                 panel.isVisible = false;
                 clickedOnUI = true;
             } else if (panel.directionSprite->getGlobalBounds().contains(worldClick)) {
-                gameField.updateTowerDir();
+                gameField.updateTowerDirection();
                 clickedOnUI = true;
             }
         }
@@ -128,7 +128,7 @@ bool Level::handleUserInput(const sf::Event &event) {
         int row = static_cast<int>(dropPos.y / data.squareHeight);
 
         if (dropPos.x >= 0.f && dropPos.x < data.gridWidth && dropPos.y >= 0.f && dropPos.y < data.gridHeight) {
-            if (gameField.addPlayerTower(towerSelection[currTowerSel]->imagePath, draggedSprite->getScale(), {row, col})) {
+            if (gameField.addPlayerTower(towerSelection[currTowerSel]->towerId, draggedSprite->getScale(), {row, col})) {
                 panel.isVisible = true;
             }
         }
@@ -155,7 +155,7 @@ void Level::render(sf::RenderWindow &window) {
     panel.setHealthNumber(gameField.getHPStat());
     panel.setRemainingNumber(gameField.getRemainingEnemiesStat());
     // Draw the game grid
-    gameField.renderGameFeild(window);
+    gameField.renderGameField(window);
     panel.drawPanel(window);
     // Draw player cards on top of panel
     for (auto & i : towerSelection) {

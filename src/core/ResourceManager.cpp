@@ -93,18 +93,29 @@ bool ResourceManager::loadTowerData(const std::string& jsonPath) {
     for (const auto& tower : j["towers"]) {
         TowerData data;
         data.name = tower["name"];
-        data.imagePath = tower["imagePath"];
-        data.cost = tower["cost"];
+        data.imagePath_a = tower["imagePath_a"];
+        data.imagePath_b = tower["imagePath_b"];
         data.towerClass = tower["class"];
         data.classImage = tower["classImage"];
+        data.cost = tower["cost"];
+        data.piercing = tower["piercing"];
+        data.attackDamage = tower["attackDamage"];
+        data.attackCoolDown = tower["attackCoolDown"];
+
+        for (const auto& coord : tower["tileRange"]) {
+            if (coord.size() == 2) {
+                data.tileRange.emplace_back(coord[0], coord[1]);
+            }
+        }
 
         towerDataMap[data.name] = data;
     }
+
     return true;
 }
 
 
-TowerData ResourceManager::getTowerDataByName(const std::string& name) const {
+TowerData ResourceManager::getTowerData(const std::string& name) const {
     auto it = towerDataMap.find(name);
     if (it != towerDataMap.end()) {
         return it->second;

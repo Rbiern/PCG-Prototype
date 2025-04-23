@@ -15,8 +15,7 @@ public:
     void setDirection(orientation newDir) override;
     orientation getDirection() override;
     void computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid[12][18]) override;
-    void update(float deltaTime) override;
-    bool update(float deltaTime, sf::Vector2f p);
+    void update(float deltaTime, const std::vector<EnemyEntity*>& enemies) override;
     void render(sf::RenderWindow& window) override;
 
 private:

@@ -3,7 +3,8 @@
 
 Tower::Tower(const std::string& id) {
     TowerData data = rm.getTowerData(id);
-    texture = rm.getTexture(data.imagePath);
+    texture = rm.getTexture(data.imagePath_a);
+    secondTexture = rm.getTexture(data.imagePath_b);
     sprite = new sf::Sprite(texture);
 
     name = data.name;
@@ -11,6 +12,9 @@ Tower::Tower(const std::string& id) {
     piercing = data.piercing;
     actionSpeed = data.attackCoolDown;
     tileRange = data.tileRange;
+    attackCoolDownTimer = .0f;
+    isFlashing = false;
+    flashTimer = 0.f;
 
     scale = {rm.getGridData().squareWidth, rm.getGridData().squareHeight};
     isClicked = false;
@@ -72,6 +76,21 @@ orientation Tower::getDirection() {
 
 void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid[12][18]) {
     direction = dir;
+    auto lb = sprite->getLocalBounds();
+    sprite->setOrigin({lb.position.x   + lb.size.x  * 0.5f, lb.position.y    + lb.size.y * 0.5f});
+    switch (dir) {
+        case orientation::faceLeft:
+            sprite->setScale({abs(sprite->getScale().x), sprite->getScale().y});
+            break;
+        case orientation::faceRight:
+            sprite->setScale({-sprite->getScale().x, sprite->getScale().y});
+            break;
+        default:
+            break;
+    }
+    sf::Vector2f cellPos = grid[origin.x][origin.y]->getPosition();
+    sprite->setPosition({cellPos.x + rm.getGridData().squareWidth * 0.5f,cellPos.y + rm.getGridData().squareHeight * 0.5f});
+
     // Rest range tiles if previously computed
     if (!rangeTiles.empty()) {
         rangeTiles.clear();
@@ -103,9 +122,8 @@ void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid
                 axisKey = offset.y; // block column
                 break;
         }
-
         // Stop if blocked
-        if (!grid[tile.x][tile.y]->canPlace() || blockedTiles.count(axisKey)) {
+        if (grid[tile.x][tile.y]->isBlockRange() || blockedTiles.count(axisKey)) {
             blockedTiles.insert(axisKey);
 
             sf::RectangleShape blockRect(scale);
@@ -127,31 +145,49 @@ void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid
 }
 
 
-bool Tower::update(float deltaTime, sf::Vector2f p) {
-    attackCooldown += deltaTime;
-    float fireInterval = 1.f / float(actionSpeed);
-    if (attackCooldown < fireInterval) {
-        return false;
-    }
-
-    sf::Vector2f ePos = p;
-    bool inRange = false;
-
-    // check each rectangle in rangeTiles
-    for (auto& rect : rangeTiles) {
-        if (rect.getGlobalBounds().contains(ePos)) {
-            inRange = true;
-            break;
+void Tower::update(float dt, const std::vector<EnemyEntity*>& enemies) {
+    if (isFlashing) {
+        flashTimer += dt;
+        if (flashTimer >= flashDuration) {
+            sprite->setTexture(texture, true);
+            isFlashing = false;
         }
     }
-    if (inRange) {
-        return true;
+    attackCoolDownTimer += dt;
+    float attackInterval = 1.f / actionSpeed;
+    if (attackCoolDownTimer < attackInterval) {
+        return;
     }
-    else return false;
+
+    std::vector<EnemyEntity*> inRange;
+    for (auto* e : enemies) {
+        sf::Vector2f ep = e->getPosition();
+        for (auto& rect : rangeTiles) {
+            if (rect.getGlobalBounds().contains(ep)) {
+                inRange.push_back(e);
+                break;
+            }
+        }
+    }
+    if (inRange.empty()) {
+        return;
+    }
+
+    if (piercing) {
+        for (auto* e : inRange) {
+            e->takeDamage(attackDamage);
+        }
+    } else {
+        auto* target = *std::max_element(inRange.begin(), inRange.end(), [](EnemyEntity* a, EnemyEntity* b) {
+            return a->getDistanceTraveled() < b->getDistanceTraveled();
+        });
+        target->takeDamage(attackDamage);
+    }
+    attackCoolDownTimer = 0.f;
+    isFlashing = true;
+    flashTimer = 0.f;
+    sprite->setTexture(secondTexture, true);
 }
-
-
-void Tower::update(float deltaTime) {}
 
 
 void Tower::render(sf::RenderWindow& window) {
@@ -171,7 +207,6 @@ void Tower::render(sf::RenderWindow& window) {
 
 std::vector<sf::Vector2i> Tower::rotateRange(const std::vector<sf::Vector2i>& offsets, orientation dir) {
     std::vector<sf::Vector2i> result;
-
     for (auto o : offsets) {
         switch (dir) {
             case orientation::faceUp:    result.emplace_back(o.y, -o.x); break;

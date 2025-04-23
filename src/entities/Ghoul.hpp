@@ -12,6 +12,14 @@ public:
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
     bool hasFinishedPath() const;
+    void setKillReward(int gold) override;
+    void setHealth(int hp) override;
+    int getMaxHealth() const override;
+    void setMaxHealth(int maxHP) override;
+    void setSpeed(float speed) override;
+    float getSpeed() const override;
+    bool checkIfAlive() override;
+    void reset() override;
 
 private:
     std::vector<sf::Vector2i> path;

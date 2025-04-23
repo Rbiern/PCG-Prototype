@@ -1,23 +1,48 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include "Tile.hpp"
-#include "GrassTile.cpp"
-#include "PathTile.cpp"
-#include "../entities/Simon.hpp"
-#include "../entities/TowerCreator.cpp"
+#include "Generator.hpp"
+#include "../entities/Tower.hpp"
+#include "../entities/Ghoul.hpp"
+#include "../entities/EnemyWave.hpp"
+#include "tiles/TileFactory.hpp"
+#include "tiles/TileCreator.cpp"
+#include "tiles/Tile.hpp"
 
 
 class GameField {
 public:
     GameField();
     ~GameField();
-    void addPlayerTower(const std::string& id, sf::Vector2f scale, sf::Vector2i pos);
-    void renderGameFeild(sf::RenderWindow& window);
+
+    bool addPlayerTower(const std::string& id, sf::Vector2f scale, sf::Vector2i pos);
+    void deletePlayerTower();
+    bool isTowerClick(sf::Vector2i click);
+    void updateTowerDirection();
+
+    int getWaveStat() const;
+    int getGoldStat() const;
+    int getHPStat() const;
+    int getRemainingEnemiesStat() const;
+
+    void update(float dt);
+    void renderGameField(sf::RenderWindow& window);
 
 private:
-    unsigned rows = 8;// 10 12   18
-    unsigned cols = 12;//7 8   12
-    Tile* grid[8][12];
-    std::vector<sf::Sprite> playerTowers;
+    int rows;
+    int cols;
+    Tile* grid[12][18];
+    Generator gen;
+
+    std::vector<TowerEntity*> playerTowers;
+    TowerEntity* selectedTower = nullptr;
+    std::unique_ptr<EnemyWave> wave;
+
+    int playerTowerCount;
+    // Game level values
+    int waveCount;
+    int gold;
+    int hp;
+    int remainingEnemies;
+
     ResourceManager& rm;
 };

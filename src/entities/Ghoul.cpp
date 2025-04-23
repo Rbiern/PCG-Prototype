@@ -9,16 +9,14 @@ Ghoul::Ghoul(const std::string& image, const std::vector<sf::Vector2i>& pathTile
     float scaleX = tileSize.x / bounds.size.x;
     float scaleY = tileSize.y / bounds.size.y;
     float finalScale = std::min(scaleX, scaleY);
-
     sprite->setScale({finalScale, finalScale});
     sprite->setOrigin({bounds.size.x/2.f, bounds.size.y/2.f});
 
-    actionSpeed = 2.1;
     health = 45;
     maxHealth = 45;
     distanceTraveled = 0.f;
-    killReward = 0;
-    actionSpeed = 20.f;
+    killReward = 12;
+    actionSpeed = 50.f;
     isAlive = true;
 
     if (!path.empty()) {
@@ -37,10 +35,8 @@ void Ghoul::update(float dt) {
     if (currentIdx >= path.size()) {
         return;
     }
-
     sf::Vector2f target = tileToWorld(path[currentIdx]);
     sf::Vector2f delta = target - currentPosition;
-
     float dist = std::hypot(delta.x, delta.y);
     float moveDist = actionSpeed * dt;
 
@@ -51,7 +47,6 @@ void Ghoul::update(float dt) {
         delta /= dist;
         currentPosition += delta * moveDist;
     }
-
     sprite->setPosition(currentPosition);
 }
 
@@ -101,11 +96,58 @@ void Ghoul::render(sf::RenderWindow& window) {
 }
 
 
+void Ghoul::setHealth(int hp) {
+    health   = hp;
+    isAlive  = (health > 0);
+}
+
+
+int Ghoul::getMaxHealth() const {
+    return maxHealth;
+}
+
+
+void Ghoul::setMaxHealth(int maxHP) {
+    maxHealth = maxHP;
+}
+
+
+void Ghoul::setSpeed(float speed) {
+    actionSpeed = speed;
+}
+
+
+float Ghoul::getSpeed() const {
+    return actionSpeed;
+}
+
+
+void Ghoul::reset() {
+    health = maxHealth;
+    isAlive = true;
+    distanceTraveled = 0.f;
+    currentIdx  = 0;
+    if (!path.empty()) {
+        currentPosition = tileToWorld(path[0]);
+        sprite->setPosition(currentPosition);
+    }
+}
+
+
+void Ghoul::setKillReward(int gold) {
+    killReward = gold;
+}
+
+
+bool Ghoul::checkIfAlive() {
+    return isAlive;
+}
+
+
 sf::Vector2f Ghoul::tileToWorld(const sf::Vector2i& t) const {
     int row = t.x, col = t.y;
     return {
             row * tileSize.y + tileSize.y * 0.5f,
             col * tileSize.x + tileSize.x * 0.5f
-
     };
 }

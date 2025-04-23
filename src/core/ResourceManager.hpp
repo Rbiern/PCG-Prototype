@@ -22,21 +22,45 @@ struct windowConfig {
 // Tower variables
 struct TowerData {
     std::string name;
-    std::string imagePath;
-    int cost;
+    std::string imagePath_a;
+    std::string imagePath_b;
     std::string towerClass;
     std::string classImage;
+    int cost;
+    bool piercing;
+    int attackDamage;
+    float attackCoolDown;
+    std::vector<sf::Vector2i> tileRange;
 };
 
 // Level grid variables
 struct gridConfig {
-    int rows = 12;
-    int cols = 18;
+    int rows = 8; //8 10 12 12
+    int cols = 12;//12 7 8  18
     float gridWidth = 1280 * 0.85f;
     float gridHeight = 720;
     sf::Vector2i gridSize = {rows, cols};
     float squareWidth = gridWidth / cols;
     float squareHeight = gridHeight / rows;
+};
+
+
+struct levelConfig {
+    float obstacles;
+    float paths;
+    float mapSize;
+    float spawnPoints;
+    float defendPoints;
+    float pathLoops;
+};
+
+
+struct playerPerformance {
+    int deployedTowersCount;
+    int health;
+    int resources;
+    float killTime;
+    float waveTime;
 };
 
 
@@ -52,7 +76,7 @@ public:
     bool loadJsonConfig(const std::string& filename);
     sf::Texture& getTexture(const std::string& filePath);
     bool loadTowerData(const std::string& jsonPath);
-    TowerData getTowerDataByName(const std::string& name) const;
+    TowerData getTowerData(const std::string& name) const;
     const windowConfig& getWindowData() const;
     const gridConfig& getGridData() const;
 

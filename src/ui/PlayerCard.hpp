@@ -6,7 +6,7 @@
 class PlayerCard {
     friend class Level;
 public:
-    PlayerCard(float baseX, float baseY, const std::string& name);
+    PlayerCard(float baseX, float baseY, const std::string& id);
     ~PlayerCard();
     void drawPlayerCard(sf::RenderWindow& window);
 
@@ -25,6 +25,7 @@ private:
     sf::Texture towerClass;
     sf::Texture tower;
 
+    std::string towerId;
     std::string imagePath;
     ResourceManager& rm;
 };
