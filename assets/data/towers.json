@@ -1,0 +1,166 @@
+{
+  "towers": [
+    {
+      "name": "o1",
+      "imagePath_a": "../../images/healer1.png",
+      "imagePath_b": "../../images/healer1.png",
+      "class": "Support",
+      "classImage": "../../images/support.png",
+      "cost": 12,
+      "piercing": false,
+      "attackDamage": 0,
+      "attackCoolDown": 5.0,
+      "tileRange": [
+        [-1, 0],
+        [-1, -1],
+        [-1, -2],
+        [0, -1],
+        [0, -2],
+        [1, 0],
+        [1, -1],
+        [1, -2]
+      ]
+    },
+    {
+      "name": "o2",
+      "imagePath_a": "../../images/healer1.png",
+      "imagePath_b": "../../images/healer1.png",
+      "class": "Support",
+      "classImage": "../../images/support.png",
+      "cost": 12,
+      "piercing": false,
+      "attackDamage": 0,
+      "attackCoolDown": 5.0,
+      "tileRange": [
+        [-1, 0],
+        [-1, -1],
+        [-1, -2],
+        [0, -1],
+        [0, -2],
+        [1, 0],
+        [1, -1],
+        [1, -2]
+      ]
+    },
+    {
+      "name": "o3",
+      "imagePath_a": "../../images/range_a0.png",
+      "imagePath_b": "../../images/range_b0.png",
+      "class": "Range",
+      "classImage": "../../images/range.png",
+      "cost": 10,
+      "piercing": false,
+      "attackDamage": 6,
+      "attackCoolDown": 1,
+      "tileRange": [
+        [-1, 0],
+        [-1, -1],
+        [-1, -2],
+        [0, -1],
+        [0, -2],
+        [0, -3],
+        [1, 0],
+        [1, -1],
+        [1, -2]
+      ]
+    },
+    {
+      "name": "o4",
+      "imagePath_a": "../../images/range_a0.png",
+      "imagePath_b": "../../images/range_b0.png",
+      "class": "Range",
+      "classImage": "../../images/range.png",
+      "cost": 10,
+      "piercing": false,
+      "attackDamage": 3,
+      "attackCoolDown": 1,
+      "tileRange": [
+        [-1, 0],
+        [-1, -1],
+        [-1, -2],
+        [0, -1],
+        [0, -2],
+        [0, -3],
+        [1, 0],
+        [1, -1],
+        [1, -2]
+      ]
+    },
+    {
+      "name": "o5",
+      "imagePath_a": "../../images/range_a1.png",
+      "imagePath_b": "../../images/range_b1.png",
+      "class": "Range",
+      "classImage": "../../images/range.png",
+      "cost": 18,
+      "piercing": false,
+      "attackDamage": 3,
+      "attackCoolDown": 7.2,
+      "tileRange": [
+        [-1, 0],
+        [-1, -1],
+        [-1, -2],
+        [0, -1],
+        [0, -2],
+        [0, -3],
+        [1, 0],
+        [1, -1],
+        [1, -2]
+      ]
+    },
+    {
+      "name": "o6",
+      "imagePath_a": "../../images/range_a1.png",
+      "imagePath_b": "../../images/range_b1.png",
+      "class": "Range",
+      "classImage": "../../images/range.png",
+      "cost": 18,
+      "piercing": false,
+      "attackDamage": 5,
+      "attackCoolDown": 7.2,
+      "tileRange": [
+        [-1, 0],
+        [-1, -1],
+        [-1, -2],
+        [0, -1],
+        [0, -2],
+        [0, -3],
+        [1, 0],
+        [1, -1],
+        [1, -2]
+      ]
+    },
+    {
+      "name": "o7",
+      "imagePath_a": "../../images/fighter_a0.png",
+      "imagePath_b": "../../images/fighter_a0.png",
+      "class": "Melee",
+      "classImage": "../../images/melee.png",
+      "cost": 17,
+      "piercing": true,
+      "attackDamage": 5,
+      "attackCoolDown": 5.2,
+      "tileRange": [
+        [0, -1],
+        [0, -2],
+        [0, -3]
+      ]
+    },
+    {
+      "name": "o8",
+      "imagePath_a": "../../images/fighter_a0.png",
+      "imagePath_b": "../../images/fighter_a0.png",
+      "class": "Melee",
+      "classImage": "../../images/melee.png",
+      "cost": 17,
+      "piercing": true,
+      "attackDamage": 5,
+      "attackCoolDown": 5.2,
+      "tileRange": [
+        [0, -1],
+        [0, -2],
+        [0, -3]
+      ]
+    }
+  ]
+}
