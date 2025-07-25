@@ -2,17 +2,18 @@
 
 
 StartUp::StartUp() : rm(ResourceManager::getInstance()) {
-    background = rm.getTexture("../../images/Loading Screen.png");
-
-    startButton.setSize(sf::Vector2f(320, 30));
-    float height = (720.f * 0.962f) - startButton.getSize().y;
-    float width = (1280.f * 0.5f) - (startButton.getSize().x / 2.f);
-
-    startButton.setPosition(sf::Vector2f(width, height));
-    startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
-
     flash = false;
     flashTimer = 0.f;
+    backgroundTexture = rm.getTexture("../../images/pages/start_page.png");
+    backgroundSprite = new sf::Sprite(backgroundTexture);
+    backgroundSprite->setPosition(sf::Vector2f{0.f, 0.f});
+    startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
+    resize(rm.ResourceManager::getScaling());
+}
+
+
+StartUp::~StartUp() {
+    delete backgroundSprite;
 }
 
 
@@ -23,8 +24,8 @@ bool StartUp::handleUserInput(const sf::Event &event) {
         }
     } else if (const auto* mouseButtonPressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseButtonPressed->button == sf::Mouse::Button::Left) {
-            if (startButton.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position.x, mouseButtonPressed->position.y))) {
-                game->setMenu(std::make_unique<LevelSelection>());
+            if (startButton.getGlobalBounds().contains(sf::Vector2f(mouseButtonPressed->position))) {
+                game->setMenu(std::make_unique<Home>());
                 return false;
             }
         }
@@ -42,14 +43,20 @@ void StartUp::menuActionUpdate(float delta) {
     }
     if (flash) {
         startButton.setFillColor(sf::Color::White);
-    }else {
+    } else {
         startButton.setFillColor(sf::Color(0x26, 0xD5, 0x5E));
     }
 }
 
 
+void StartUp::resize(sf::Vector2f scale) {
+    backgroundSprite->setScale(scale);
+    startButton.setSize(sf::Vector2f{477.f * scale.x, 42.f * scale.y});
+    startButton.setPosition(sf::Vector2f{721.f * scale.x, 996.f * scale.y});
+}
+
+
 void StartUp::render(sf::RenderWindow &window) {
-    sf::Sprite sprite(background);
-    window.draw(sprite);
+    window.draw(*backgroundSprite);
     window.draw(startButton);
 }

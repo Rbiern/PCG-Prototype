@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "Generator.hpp"
 #include "../entities/Tower.hpp"
-#include "../entities/Ghoul.hpp"
+//#include "../entities/Ghoul.hpp"
 #include "../entities/EnemyWave.hpp"
 #include "tiles/TileFactory.hpp"
 #include "tiles/TileCreator.cpp"
@@ -17,7 +17,10 @@ public:
     bool addPlayerTower(const std::string& id, sf::Vector2f scale, sf::Vector2i pos);
     void deletePlayerTower();
     bool isTowerClick(sf::Vector2i click);
+    bool hasSelectedTower();
     void updateTowerDirection();
+
+    void setScale(sf::Vector2f scale);
 
     int getWaveStat() const;
     int getGoldStat() const;
@@ -30,7 +33,7 @@ public:
 private:
     int rows;
     int cols;
-    Tile* grid[12][18];
+    Tile* grid[16][24];
     Generator gen;
 
     std::vector<TowerEntity*> playerTowers;

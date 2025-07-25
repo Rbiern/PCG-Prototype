@@ -6,8 +6,8 @@
 
 class Generator {
 public:
-    static constexpr int Rows = 12;
-    static constexpr int Cols = 18;
+    static constexpr int Rows = 16;
+    static constexpr int Cols = 24;
 
     const int (&getMap() const)[Rows][Cols] {
         return map;
@@ -18,7 +18,7 @@ public:
     }
 
 private:
-    int map[12][18] = {
+    int map[16][24] = {
             {13, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
             {10, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
             {0, 0, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -35,6 +35,21 @@ private:
     std::vector<sf::Vector2i> listOfAllPaths;
 
     std::vector<sf::Vector2i> path = {
+            {-1, 3}, {0, 3}, {1, 3}, {2, 3}, //right 3
+            {2, 2},// up1
+            {3, 2}, {4, 2}, {5, 2}, {6, 2}, // right 4
+            {6, 3}, {6, 4}, // down 2
+            {7, 4},//right 1
+            {7, 5}, // down 1
+            {8, 5}, {9, 5}, // right 2
+            {9, 4}, {9, 3}, // up 2
+            {10, 3}, //right 1
+            {10, 2}, // up1
+            {11, 2}, {12, 2}, {13, 2}, {14, 2}, {15, 2}, {16, 2}, {17, 2}, {18, 2}, {19, 2}// right 2
+//            {6, 5}, {6, 6}, {6, 7}, {6, 8}
+    };
+
+    std::vector<sf::Vector2i> path2 = {
             {-1, 3}, {0, 3}, {1, 3}, {2, 3}, //right 3
             {2, 2},// up1
             {3, 2}, {4, 2}, {5, 2}, {6, 2}, // right 4

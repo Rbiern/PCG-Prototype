@@ -7,7 +7,7 @@
 
 class TowerEntity : public BaseEntity {
 protected:
-    orientation direction;
+    Direction direction;
     bool isClicked;
     bool piercing;
     int attackDamage;
@@ -16,6 +16,7 @@ protected:
     float flashTimer;
     const float flashDuration = 0.1f;
     sf::Texture secondTexture;
+    sf::Vector2i gridCoordinates;
     std::vector<sf::Vector2i> tileRange;
     std::vector<sf::RectangleShape> rangeTiles;
     std::vector<sf::RectangleShape> blockedRangeTiles;
@@ -30,8 +31,8 @@ public:
     virtual void setScale(sf::Vector2f scale) = 0;
     virtual void setGridCoordinates(sf::Vector2i pos) = 0;
     virtual sf::Vector2i getGridCoordinates() = 0;
-    virtual void setDirection(orientation newDir) = 0;
-    virtual orientation getDirection() = 0;
-    virtual void computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid[12][18]) = 0;
+    virtual void setDirection(Direction newDir) = 0;
+    virtual Direction getDirection() = 0;
+    virtual void computeRange(const sf::Vector2i& origin, Direction dir, Tile* grid[16][24]) = 0;
     virtual void update(float deltaTime, const std::vector<EnemyEntity*>& enemies) = 0;
 };

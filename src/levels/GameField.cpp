@@ -5,16 +5,20 @@ GameField::GameField() : rm(ResourceManager::getInstance()) {
     rows = rm.getGridData().rows;
     cols = rm.getGridData().cols;
 
-    int map[12][18];
+    // Generate the grid based level using PCG
+    int map[16][24];
     const int (&src)[Generator::Rows][Generator::Cols] = gen.getMap();
     for (int r = 0; r < Generator::Rows; ++r) {
         for (int c = 0; c < Generator::Cols; ++c) {
             map[r][c] = src[r][c];
         }
     }
+
     // Terrain Grid spans the entire length and 85% width of the screen
     float gridWidth = 1280 * .85f;
     float gridHeight = 720;
+//    float gridWidth = rm.getWindowData().windowSize.x * .85f;
+//    float gridHeight = rm.getWindowData().windowSize.y;
     // The size of each square in the grid
     float squareWidth = gridWidth / cols;
     float squareHeight = gridHeight / rows;
@@ -37,7 +41,7 @@ GameField::GameField() : rm(ResourceManager::getInstance()) {
     allPaths.push_back(gen.getPath());
     waveCount = 1;
     WaveConfig cfg{
-            /* enemyCount: */ 10,
+            /* enemyCount: */ 5,
             /* hpMult:     */ 1.0f,
             /* speedMult:  */ 1.0f,
             /* spawnIntv:  */ 1.0f,
@@ -68,7 +72,7 @@ bool GameField::addPlayerTower(const std::string& id, sf::Vector2f scale, sf::Ve
     towerNode->setPosition(grid[pos.x][pos.y]->tile.getPosition());
     towerNode->setGridCoordinates(pos);
     towerNode->setScale(scale);
-    towerNode->computeRange(pos, orientation::faceLeft, grid);
+    towerNode->computeRange(pos, Direction::faceLeft, grid);
 
     if (selectedTower != nullptr) {             // De-select any selected towers
         selectedTower->setUserInteraction(false);
@@ -125,12 +129,17 @@ bool GameField::isTowerClick(sf::Vector2i click) {
 }
 
 
+bool GameField::hasSelectedTower() {
+    return (selectedTower != nullptr);
+}
+
+
 void GameField::updateTowerDirection() {
     for (const auto &towers : playerTowers) {
         if (towers->isSelected()) {
             int temp = static_cast<int>(towers->getDirection());
             temp = (temp + 1) % 4;
-            orientation dir = static_cast<orientation>(temp);
+            Direction dir = static_cast<Direction>(temp);
 
             towers->setDirection(dir);
             towers->computeRange(towers->getGridCoordinates(), dir, grid);
@@ -189,4 +198,8 @@ void GameField::renderGameField(sf::RenderWindow &window) {
     for (auto* e : wave->getActiveEnemies()) {
         e->render(window);
     }
+}
+
+void GameField::setScale(sf::Vector2f scale) {
+
 }

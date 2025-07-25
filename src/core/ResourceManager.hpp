@@ -1,4 +1,6 @@
 #pragma once
+#include <windows.h>
+#include <shellapi.h>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -11,32 +13,49 @@
 
 // Window variables
 struct windowConfig {
-    unsigned int resolution[2];
-    bool isFullscreen;
+    bool fullscreen;
     bool verticalSync;
-    bool antiAliasingEnabled;
+    bool antiAliasing;
+    bool music;
+    bool soundEffect;
+    unsigned int musicLevel;
+    unsigned int soundLevel;
     unsigned int antiAliasingLevel;
     unsigned int frameRate;
+    sf::Vector2u windowSize;
+    bool updateRequired = false;
 };
 
 // Tower variables
 struct TowerData {
     std::string name;
-    std::string imagePath_a;
-    std::string imagePath_b;
+    std::string towerImagePath_a;
+    std::string towerImagePath_b;
     std::string towerClass;
-    std::string classImage;
+    std::string classIconImagePath;
+    std::string position;
+    std::string role;
+    int HP;
+    int ATK;
+    int RES;
     int cost;
-    bool piercing;
-    int attackDamage;
-    float attackCoolDown;
+    int blockCount;
+    float attackInterval;
     std::vector<sf::Vector2i> tileRange;
+};
+
+
+struct decks {
+    std::array<TowerData*, 8> deck1;
+    std::array<TowerData*, 8> deck2;
+    std::array<TowerData*, 8> deck3;
+    std::array<TowerData*, 8> deck4;
 };
 
 // Level grid variables
 struct gridConfig {
-    int rows = 8; //8 10 12 12
-    int cols = 12;//12 7 8  18
+    int rows = 8; //8 , 12, 16
+    int cols = 12;//12 , 18, 24
     float gridWidth = 1280 * 0.85f;
     float gridHeight = 720;
     sf::Vector2i gridSize = {rows, cols};
@@ -45,23 +64,23 @@ struct gridConfig {
 };
 
 
-struct levelConfig {
-    float obstacles;
-    float paths;
-    float mapSize;
-    float spawnPoints;
-    float defendPoints;
-    float pathLoops;
-};
-
-
-struct playerPerformance {
-    int deployedTowersCount;
-    int health;
-    int resources;
-    float killTime;
-    float waveTime;
-};
+//struct levelConfig {
+//    float obstacles;
+//    float paths;
+//    float mapSize;
+//    float spawnPoints;
+//    float defendPoints;
+//    float pathLoops;
+//};
+//
+//
+//struct playerPerformance {
+//    int deployedTowersCount;
+//    int health;
+//    int resources;
+//    float killTime;
+//    float waveTime;
+//};
 
 
 class ResourceManager {
@@ -69,16 +88,21 @@ public:
     ResourceManager(const ResourceManager&) = delete;           // Delete copy constructor
     ResourceManager& operator=(const ResourceManager&) = delete;// Delete assignment operator
     static ResourceManager& getInstance();                      // Access the singleton instance
-        static void destroyInstance();                          // Destroy the singleton instance
+    static void destroyInstance();                              // Destroy the singleton instance
 
-    // Resource loading methods
+    // Utilizes      methods and getters
     sf::Font& getFont();
-    bool loadJsonConfig(const std::string& filename);
     sf::Texture& getTexture(const std::string& filePath);
-    bool loadTowerData(const std::string& jsonPath);
     TowerData getTowerData(const std::string& name) const;
-    const windowConfig& getWindowData() const;
+    bool updateWindowConfig(const std::string& filePath);
+    windowConfig& getWindowData();
+//    const windowConfig& getWindowData() const;
     const gridConfig& getGridData() const;
+    sf::Vector2f getScaling();
+
+    // Resource loading
+    bool loadJsonConfig(const std::string& filename);
+    bool loadTowerData(const std::string& jsonPath);
 
 private:
     // Private constructor/destructor for singleton
@@ -91,15 +115,18 @@ private:
     static std::unique_ptr<ResourceManager> instance;
     static std::mutex mtx;
 
+    bool IsTaskbarAutoHide();
+    bool GetTaskbarData(APPBARDATA& abd);
+
     // Resources
     sf::Font font;
     bool fontLoaded = false;
     std::unordered_map<std::string, sf::Texture> textures;
     std::unordered_map<std::string, TowerData> towerDataMap;
-    // Difficulty and Level Generation Selections
-    std::map<std::string, bool> generators;
-    std::map<std::string, bool> inferenceEngine;
+
+
     // Structures
     windowConfig windowInfo;
     gridConfig gridCfg;
+    decks towerDeck;
 };

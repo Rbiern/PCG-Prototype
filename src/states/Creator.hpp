@@ -3,20 +3,20 @@
 #include "../core/GameApp.hpp"
 
 
-class StartUp : public Menu {
+class Creator : public Menu {
 public:
-    StartUp();
-    ~StartUp() override;
+    Creator();
+    ~Creator() override;
     bool handleUserInput(const sf::Event& event) override;
     void menuActionUpdate(float delta) override;
     void resize(sf::Vector2f scale) override;
     void render(sf::RenderWindow& window) override;
 
 private:
-    bool flash;
-    float flashTimer;
-    sf::RectangleShape startButton;
-    sf::Texture backgroundTexture;
+    sf::Texture background;
+    sf::Texture homeButton;
+
     sf::Sprite* backgroundSprite;
+    sf::Sprite* homeButtonSprite;
     ResourceManager& rm;
 };

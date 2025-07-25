@@ -12,12 +12,12 @@ public:
     void setScale(sf::Vector2f scale) override;
     void setGridCoordinates(sf::Vector2i pos) override;
     sf::Vector2i getGridCoordinates() override;
-    void setDirection(orientation newDir) override;
-    orientation getDirection() override;
-    void computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid[12][18]) override;
+    void setDirection(Direction newDir) override;
+    Direction getDirection() override;
+    void computeRange(const sf::Vector2i& origin, Direction dir, Tile* grid[16][24]) override;
     void update(float deltaTime, const std::vector<EnemyEntity*>& enemies) override;
     void render(sf::RenderWindow& window) override;
 
 private:
-    static std::vector<sf::Vector2i> rotateRange(const std::vector<sf::Vector2i>& offsets, orientation dir);
+    static std::vector<sf::Vector2i> rotateRange(const std::vector<sf::Vector2i>& offsets, Direction dir);
 };

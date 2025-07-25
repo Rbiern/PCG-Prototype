@@ -1,42 +1,46 @@
-#include "Game.hpp"
+#include "GameApp.hpp"
 
 
-Game::Game() : rm(ResourceManager::getInstance()) {
+GameApp::GameApp() : rm(ResourceManager::getInstance()) {
     // Load window configurations from json file
     if (!rm.loadJsonConfig("../../config.json")) {
         std::cerr << "Creating Window Error: Cannot open JSON file.\n" << std::endl;
         exit(-1);
     }
-    windowConfig windowInfo = rm.getWindowData();
+    config = &rm.getWindowData();
     title = "Prototype";
-    width = windowInfo.resolution[0];
-    height = windowInfo.resolution[1];
-    frameRate = windowInfo.frameRate;
-    antiAliasingEnabled = windowInfo.antiAliasingEnabled;
-    isFullscreen = windowInfo.isFullscreen;
-    verticalSync = windowInfo.verticalSync;
-    if (antiAliasingEnabled) {
-        settings.antiAliasingLevel = windowInfo.antiAliasingLevel;
+    isFullscreen = config->fullscreen;
+    if (config->antiAliasing) {
+        settings.antiAliasingLevel = config->antiAliasingLevel;
     }
 
     // Create window
-    if (isFullscreen) {
-        window.create(sf::VideoMode({width, height}),
-                      title, sf::Style::Default,
+    if (config->fullscreen) {
+        window.create(sf::VideoMode::getDesktopMode(),
+                      title,
+                      sf::Style::Default,
                       sf::State::Fullscreen,
                       settings);
-    } else {
-        window.create(sf::VideoMode({width, height}),
-                      title, sf::Style::Close,
+    }
+    else {
+        window.create(sf::VideoMode(config->windowSize),
+                      title,
+                      sf::Style::Default,
                       sf::State::Windowed,
                       settings);
     }
-    window.setVerticalSyncEnabled(verticalSync);
-    window.setFramerateLimit(frameRate);
-    if (!icon.loadFromFile("../../images/icon.png")) {
-        std::cerr << "Load Icon image error.\n" << std::endl;
+
+    if (config->verticalSync) {
+        window.setVerticalSyncEnabled(true);
+    } else {
+        window.setFramerateLimit(config->frameRate);
     }
-    window.setIcon(icon);
+
+    if (!icon.loadFromFile("../../images/icon.png")) {
+        std::cerr << "Load Icon image error." << std::endl;
+    } else {
+        window.setIcon(icon);
+    }
 
     // Set window state
     setMenu(std::make_unique<StartUp>());
@@ -44,14 +48,14 @@ Game::Game() : rm(ResourceManager::getInstance()) {
 }
 
 
-Game::~Game() {
+GameApp::~GameApp() {
     if (window.isOpen()) {
         window.close();
     }
 }
 
 
-void Game::setMenu(std::unique_ptr<Menu> menu) {
+void GameApp::setMenu(std::unique_ptr<Menu> menu) {
     currentMenu = std::move(menu);
     if (currentMenu) {
         currentMenu->setGame(this);
@@ -59,34 +63,56 @@ void Game::setMenu(std::unique_ptr<Menu> menu) {
 }
 
 
-void Game::executeGame() {
-    sf::Clock clock;
-    double starting = 0.0001;
-    float levelDT;
+void GameApp::executeGameApp() {
+    if (!rm.loadTowerData("../../towers.json")) {
+        std::cerr << "Creating UI Error: Cannot open JSON file.\n" << std::endl;
+        exit(-1);
+    }
+    float deltaTime;
+
 
     // Game Loop: stops when window is not open
     while (window.isOpen()) {
-        // Track frames per second info
-        double ending = clock.getElapsedTime().asSeconds();
-        double dt = ending - starting;
-        starting = ending;
-        // Display frames per second info in window bar
-        std::string FPS = std::to_string(int (1 / dt));
-        window.setTitle(title + " | FPS: " + FPS);
+        deltaTime = clock.restart().asSeconds();
 
-        levelDT = deltaTime.restart().asSeconds();
-        // Process events
+
+        // Process input events
         while (const std::optional event = window.pollEvent()) {
             // Close window: exit
-            if (event->is<sf::Event::Closed>())
+            if (event->is<sf::Event::Closed>()) {
                 window.close();
-            // Handle other window input
-            else
-                 if (currentMenu->handleUserInput(*event)) window.close();
+            }
+            // Resize window: scale
+            else if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+                config->windowSize = resized->size;
+                window.setView(sf::View(sf::FloatRect({0, 0}, {static_cast<float>(resized->size.x), static_cast<float>(resized->size.y)})));
+                sf::Vector2f newScale = sf::Vector2f{float(resized->size.x) / 1920.f, float(resized->size.y) / 1080.f};
+                currentMenu->resize(newScale);
+            }
+            // Fullscreen mode
+            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyPressed->scancode == sf::Keyboard::Scan::F11) {
+                    config->fullscreen = !isFullscreen;
+                    sf::RenderWindow desktop;
+                    (isFullscreen = !isFullscreen) ? window.create(sf::VideoMode(config->windowSize), title, sf::Style::Default, sf::State::Fullscreen, settings) : window.create(sf::VideoMode(config->windowSize), title, sf::Style::Default, sf::State::Windowed, settings);
+                    window.setView(sf::View(sf::FloatRect({0, 0}, {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)})));
+                    window.setVerticalSyncEnabled(config->verticalSync);
+                    window.setFramerateLimit(config->frameRate);
+                    window.setIcon(icon);
+                    currentMenu->resize({window.getSize().x / 1920.f, window.getSize().y / 1080.f});
+                }
+            }
+            // Other inputs
+            if (currentMenu->handleUserInput(*event)) {
+                window.close();
+            }
         }
-        window.clear();             // Clear screen
-        currentMenu->menuActionUpdate(levelDT);
-        currentMenu->render(window);// Window state
-        window.display();           // Update the window
+
+
+        window.clear();                             // Clear screen
+        currentMenu->menuActionUpdate(deltaTime);   // Move in game time forward
+        currentMenu->render(window);                // Window state
+        window.display();                           // Update the window
     }
+    rm.updateWindowConfig("../../config.json");
 }

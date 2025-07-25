@@ -1,6 +1,6 @@
 #pragma once
 #include "Menu.hpp"
-#include "../core/Game.hpp"
+#include "../core/GameApp.hpp"
 #include "../ui/LevelHUD.hpp"
 #include "../ui/SidePanel.hpp"
 #include "../ui/PlayerCard.hpp"
@@ -14,6 +14,7 @@ public:
     ~Level() override;
     bool handleUserInput(const sf::Event& event) override;
     void menuActionUpdate(float delta) override;
+    void resize(sf::Vector2f scale) override;
     void render(sf::RenderWindow& window) override;
 
 private:
@@ -32,4 +33,16 @@ private:
     sf::Sprite* draggedSprite;
     // Other
     ResourceManager& rm;
+
+
+    const std::array<sf::Vector2f, 8> CardPlacement {
+            sf::Vector2f(1657.f, 424.f),
+            sf::Vector2f(1657.f, 586.f),
+            sf::Vector2f(1657.f, 748.f),
+            sf::Vector2f(1657.f, 910.f),
+            sf::Vector2f(1783.f, 424.f),
+            sf::Vector2f(1783.f, 586.f),
+            sf::Vector2f(1783.f, 748.f),
+            sf::Vector2f(1783.f, 910.f),
+    };
 };

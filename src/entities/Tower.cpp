@@ -3,14 +3,14 @@
 
 Tower::Tower(const std::string& id) {
     TowerData data = rm.getTowerData(id);
-    texture = rm.getTexture(data.imagePath_a);
-    secondTexture = rm.getTexture(data.imagePath_b);
+    texture = rm.getTexture(data.towerImagePath_a);
+    secondTexture = rm.getTexture(data.towerImagePath_b);
     sprite = new sf::Sprite(texture);
 
     name = data.name;
-    attackDamage = data.attackDamage;
-    piercing = data.piercing;
-    actionSpeed = data.attackCoolDown;
+    attackDamage = data.ATK;
+    piercing = false;
+    actionSpeed = data.attackInterval;
     tileRange = data.tileRange;
     attackCoolDownTimer = .0f;
     isFlashing = false;
@@ -64,25 +64,25 @@ sf::Vector2i Tower::getGridCoordinates() {
 }
 
 
-void Tower::setDirection(orientation newDir) {
+void Tower::setDirection(Direction newDir) {
     direction = newDir;
 }
 
 
-orientation Tower::getDirection() {
+Direction Tower::getDirection() {
     return direction;
 }
 
 
-void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid[12][18]) {
+void Tower::computeRange(const sf::Vector2i& origin, Direction dir, Tile* grid[16][24]) {
     direction = dir;
     auto lb = sprite->getLocalBounds();
     sprite->setOrigin({lb.position.x   + lb.size.x  * 0.5f, lb.position.y    + lb.size.y * 0.5f});
     switch (dir) {
-        case orientation::faceLeft:
+        case Direction::faceLeft:
             sprite->setScale({abs(sprite->getScale().x), sprite->getScale().y});
             break;
-        case orientation::faceRight:
+        case Direction::faceRight:
             sprite->setScale({-sprite->getScale().x, sprite->getScale().y});
             break;
         default:
@@ -113,12 +113,12 @@ void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid
         // Determine what axis to block based on orientation
         int axisKey = 0;
         switch (dir) {
-            case orientation::faceLeft:
-            case orientation::faceRight:
+            case Direction::faceLeft:
+            case Direction::faceRight:
                 axisKey = offset.x; // block row
                 break;
-            case orientation::faceUp:
-            case orientation::faceDown:
+            case Direction::faceUp:
+            case Direction::faceDown:
                 axisKey = offset.y; // block column
                 break;
         }
@@ -128,7 +128,7 @@ void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid
 
             sf::RectangleShape blockRect(scale);
             blockRect.setPosition(grid[tile.x][tile.y]->getPosition());
-            blockRect.setFillColor(sf::Color(255, 0, 0, 120));
+            blockRect.setFillColor(sf::Color(255, 0, 0, 120)); // red
             blockRect.setOutlineThickness(1.f);
 
             blockedRangeTiles.push_back(blockRect);
@@ -137,7 +137,7 @@ void Tower::computeRange(const sf::Vector2i& origin, orientation dir, Tile* grid
 
         sf::RectangleShape rect(scale);
         rect.setPosition(grid[tile.x][tile.y]->getPosition());
-        rect.setFillColor(sf::Color(255, 255, 0, 100));
+        rect.setFillColor(sf::Color(255, 255, 0, 100)); // yellow
         rect.setOutlineColor(sf::Color::Yellow);
         rect.setOutlineThickness(1.f);
         rangeTiles.push_back(rect);
@@ -205,14 +205,14 @@ void Tower::render(sf::RenderWindow& window) {
 }
 
 
-std::vector<sf::Vector2i> Tower::rotateRange(const std::vector<sf::Vector2i>& offsets, orientation dir) {
+std::vector<sf::Vector2i> Tower::rotateRange(const std::vector<sf::Vector2i>& offsets, Direction dir) {
     std::vector<sf::Vector2i> result;
     for (auto o : offsets) {
         switch (dir) {
-            case orientation::faceUp:    result.emplace_back(o.y, -o.x); break;
-            case orientation::faceDown:  result.emplace_back(-o.y, o.x); break;
-            case orientation::faceRight: result.emplace_back(-o.x, -o.y); break;
-            case orientation::faceLeft:  result.emplace_back(o); break;
+            case Direction::faceUp:    result.emplace_back(o.y, -o.x); break;
+            case Direction::faceDown:  result.emplace_back(-o.y, o.x); break;
+            case Direction::faceRight: result.emplace_back(-o.x, -o.y); break;
+            case Direction::faceLeft:  result.emplace_back(o); break;
         }
     }
     return result;

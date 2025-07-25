@@ -22,8 +22,9 @@ public:
     void reset() override;
 
 private:
-    std::vector<sf::Vector2i> path;
-    size_t currentIdx = 0;
-    sf::Vector2f tileSize;
-    sf::Vector2f tileToWorld(const sf::Vector2i& t) const;
+    int frameWidth;
+    int frameHeight;
+    int currentFrame;
+    int totalFrames;
+    float animateTimer;
 };

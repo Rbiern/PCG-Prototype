@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "../core/ResourceManager.hpp"
 
-enum class orientation {
+enum class Direction {
     faceLeft,
     faceDown,
     faceRight,
@@ -13,9 +13,9 @@ class BaseEntity {
 protected:
     sf::Texture texture;
     sf::Sprite* sprite;
-    sf::Vector2f scale;
-    sf::Vector2i gridCoordinates;
     std::string name;
+    sf::Vector2f scale;
+    Direction lastDirection;
     float actionSpeed;
     ResourceManager& rm;
 

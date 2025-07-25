@@ -2,10 +2,6 @@
 
 
 Level::Level() : rm(ResourceManager::getInstance()) {
-    if (!rm.loadTowerData("../../towers.json")) {
-        std::cerr << "Creating UI Error: Cannot open JSON file.\n" << std::endl;
-        exit(-1);
-    }
     // List of coords to place tower selection cards on panel
     std::array<sf::Vector2f, 8> uiCoords = {
             sf::Vector2f(1102.f, 615.f),
@@ -21,13 +17,16 @@ Level::Level() : rm(ResourceManager::getInstance()) {
     std::array<std::string, 8> id = {
             "o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8"
     };
-    for (int i = 0; i < 8; ++i) {
-        towerSelection[i] = new PlayerCard(uiCoords[i].x, uiCoords[i].y, id[i]);
+    for (int i = 0; i < 8; i++) {
+        towerSelection[i] = new PlayerCard(id[i]);
+        towerSelection[i]->setPosition(uiCoords[i]);
+        towerSelection[i]->setScale(rm.getScaling());
     }
     // Flags
     pauseFlag = false;
     exitFlag = false;
     isDragging = false;
+    resize(rm.getScaling());
 }
 
 
@@ -54,17 +53,17 @@ bool Level::handleUserInput(const sf::Event &event) {
         bool clickedOnUI = false;
         // Panel buttons
         if (panel.isVisible) {
-            if (panel.deleteSprite->getGlobalBounds().contains(worldClick)) {
+            if (panel.sellButtonSprite->getGlobalBounds().contains(worldClick)) {
                 gameField.deletePlayerTower();
                 panel.isVisible = false;
                 clickedOnUI = true;
-            } else if (panel.directionSprite->getGlobalBounds().contains(worldClick)) {
+            } else if (panel.northButtonSprite->getGlobalBounds().contains(worldClick)) {
                 gameField.updateTowerDirection();
                 clickedOnUI = true;
             }
         }
         // HUD and other UI buttons
-        if (panel.exitSprite->getGlobalBounds().contains(worldClick)) {
+        if (panel.homeButtonSprite->getGlobalBounds().contains(worldClick)) {
             exitFlag = true;
             hud.enablePopUp();
             clickedOnUI = true;
@@ -78,7 +77,7 @@ bool Level::handleUserInput(const sf::Event &event) {
         // Exit game pop up
         if (exitFlag) {
             if (hud.yesButtonSprite->getGlobalBounds().contains(worldClick)) {
-                game->setMenu(std::make_unique<LevelSelection>());
+                game->setMenu(std::make_unique<Home>());
                 return false;
             }
             if (hud.noButtonSprite->getGlobalBounds().contains(worldClick)) {
@@ -87,21 +86,27 @@ bool Level::handleUserInput(const sf::Event &event) {
                 clickedOnUI = true;
             }
         }
-        // Player card selection (towers)
-        for (int i = 0; i < 8; i++) {
-            if (towerSelection[i]->backgroundRect.getGlobalBounds().contains(worldClick)) {
-                currTowerSel = i;
-                isDragging = true;
-                draggedSprite = new sf::Sprite(rm.getTexture(towerSelection[i]->imagePath));
-                setScale();
-                clickedOnUI = true;
+        if (!panel.isVisible) {
+            // Player card selection (towers)
+            for (int i = 0; i < 8; i++) {
+                if (towerSelection[i]->contains(worldClick)) {
+                    currTowerSel = i;
+                    isDragging = true;
+                    draggedSprite = new sf::Sprite(rm.getTexture(towerSelection[i]->towerData.towerImagePath_a));
+                    setScale();
+                    clickedOnUI = true;
+                }
             }
         }
         // Check if player clicked on tower
         if (!clickedOnUI) {
             bool clickedTower = gameField.isTowerClick(pixelClick);
             if (clickedTower) { //show panel when a tower is selected (even a new one)
-                panel.isVisible = true;
+                if (gameField.hasSelectedTower()) { // true if a new tower was clicked on and selected otherwise false if same tower was clicked on
+                    panel.isVisible = true; // if new tower is clicked on then show ui buttons for it
+                } else {
+                    panel.isVisible = false;// else if same selected tower is clicked on, hide tower ui buttons
+                }
             } else {            // clicked on empty space
                 panel.isVisible = false;
             }
@@ -128,7 +133,7 @@ bool Level::handleUserInput(const sf::Event &event) {
         int row = static_cast<int>(dropPos.y / data.squareHeight);
 
         if (dropPos.x >= 0.f && dropPos.x < data.gridWidth && dropPos.y >= 0.f && dropPos.y < data.gridHeight) {
-            if (gameField.addPlayerTower(towerSelection[currTowerSel]->towerId, draggedSprite->getScale(), {row, col})) {
+            if (gameField.addPlayerTower(towerSelection[currTowerSel]->towerData.name, draggedSprite->getScale(), {row, col})) {
                 panel.isVisible = true;
             }
         }
@@ -148,6 +153,16 @@ void Level::menuActionUpdate(float delta) {
 }
 
 
+void Level::resize(sf::Vector2f scale) {
+    panel.setScale(scale);
+
+    for (int i = 0; i < 8; i++) {
+        towerSelection[i]->setPosition(sf::Vector2{CardPlacement[i].x * scale.x, CardPlacement[i].y * scale.y});
+        towerSelection[i]->setScale(rm.getScaling());
+    }
+}
+
+
 void Level::render(sf::RenderWindow &window) {
     // Update the counters
     panel.setRoundNumber(gameField.getWaveStat());
@@ -156,13 +171,15 @@ void Level::render(sf::RenderWindow &window) {
     panel.setRemainingNumber(gameField.getRemainingEnemiesStat());
     // Draw the game grid
     gameField.renderGameField(window);
-    panel.drawPanel(window);
+    window.draw(panel);
     // Draw player cards on top of panel
-    for (auto & i : towerSelection) {
-        i->drawPlayerCard(window);
-    }
-    if (isDragging) {
-        window.draw(*draggedSprite);
+    if (!panel.isVisible) {
+        for (auto &i: towerSelection) {
+            window.draw(*i);
+        }
+        if (isDragging) {
+            window.draw(*draggedSprite);
+        }
     }
     hud.drawHUD(window);
 }

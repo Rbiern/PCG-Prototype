@@ -1,26 +1,39 @@
 #include "Ghoul.hpp"
 
 
-Ghoul::Ghoul(const std::string& image, const std::vector<sf::Vector2i>& pathTiles, const sf::Vector2f& cellSize) : path(pathTiles), tileSize(cellSize) {
-    texture = rm.getTexture(image);
+Ghoul::Ghoul(const std::string& image, const std::vector<sf::Vector2i>& pathTiles, const sf::Vector2f& cellSize) {
+    texture = rm.getTexture("../../images/entities/NPC_469.png");
     sprite = new sf::Sprite(texture);
+    path = pathTiles;
+    scale = cellSize;
+
+    totalFrames = 12;
+    frameWidth = 52;
+    frameHeight = 60;
+    currentFrame = 0;
+    animateTimer = 0.f;
 
     sf::FloatRect bounds = sprite->getLocalBounds();
-    float scaleX = tileSize.x / bounds.size.x;
-    float scaleY = tileSize.y / bounds.size.y;
+    float scaleX = scale.x / bounds.size.x;
+    float scaleY = scale.y / bounds.size.y;
     float finalScale = std::min(scaleX, scaleY);
-    sprite->setScale({finalScale, finalScale});
-    sprite->setOrigin({bounds.size.x/2.f, bounds.size.y/2.f});
 
-    health = 45;
-    maxHealth = 45;
-    distanceTraveled = 0.f;
-    killReward = 12;
-    actionSpeed = 50.f;
-    isAlive = true;
+    sprite->setTextureRect(sf::IntRect({0, 0}, {frameWidth, frameHeight}));
+    sprite->setScale({-sprite->getScale().x, sprite->getScale().y});
+//    sprite->setScale({-finalScale, finalScale});
+    sprite->setOrigin({frameWidth / 2.f, frameHeight / 2.f}); // Adjust origin so it doesn’t move position
+//    sprite->setOrigin({bounds.size.x/2.f, bounds.size.y/2.f});
+
+    health = 30;            // Current health
+    maxHealth = 30;         // Max starting health
+    killReward = 12;        // Reward for killing enmies
+    distanceTraveled = 0.f; // Total distance traveled, used in knowing how is first or last with other enemies
+    alive = true;         //
+    actionSpeed = 150.f;    // how fast enemy can travel in level
+    currentIdx = 0;
 
     if (!path.empty()) {
-        currentPosition = tileToWorld(path[0]);
+        currentPosition = gridToPixelCenter(path[0]);
         sprite->setPosition(currentPosition);
     }
 }
@@ -32,10 +45,22 @@ Ghoul::~Ghoul() {
 
 
 void Ghoul::update(float dt) {
+    // --- advance animation timer & frame index as you already do ---
+    animateTimer += dt;
+    if (animateTimer > 0.09f) {
+        currentFrame = (currentFrame + 1) % totalFrames;
+//        sprite->setTextureRect(sf::IntRect({0, currentFrame * frameHeight}, {frameWidth, frameHeight}));
+        animateTimer = 0.f;
+    }
+
+    // --- movement toward next path tile ---
     if (currentIdx >= path.size()) {
         return;
     }
-    sf::Vector2f target = tileToWorld(path[currentIdx]);
+
+    Direction temp = lastDirection;
+
+    sf::Vector2f target = gridToPixelCenter(path[currentIdx]);
     sf::Vector2f delta = target - currentPosition;
     float dist = std::hypot(delta.x, delta.y);
     float moveDist = actionSpeed * dt;
@@ -44,10 +69,28 @@ void Ghoul::update(float dt) {
         currentPosition = target;
         ++currentIdx;
     } else {
+        // determine direction before normalizing
+        if (std::abs(delta.x) > std::abs(delta.y)) {
+            lastDirection = (delta.x > 0 ? Direction::faceRight : Direction::faceLeft);
+        } else {
+            lastDirection = (delta.y > 0 ? Direction::faceDown : Direction::faceUp);
+        }
+        // normalize & move
         delta /= dist;
         currentPosition += delta * moveDist;
     }
     sprite->setPosition(currentPosition);
+
+    // --- pick the correct row in your sprite-sheet based on lastDirection ---
+    switch (lastDirection) {
+        case Direction::faceLeft:  if (currentFrame < 7) currentFrame = 7; sprite->setScale({+1.f, 1.f}); break;// Flip horizontally
+        case Direction::faceRight: if (currentFrame < 7) currentFrame = 7; sprite->setScale({-1.f, 1.f}); break;// Flip horizontally
+        case Direction::faceUp:    if (currentFrame > 5) currentFrame = 2; sprite->setScale({1.f, +1.f}); break;// Flip vertically
+        case Direction::faceDown:  if (currentFrame > 5) currentFrame = 2; sprite->setScale({1.f, -1.f}); break;// Flip vertically
+    }
+
+    // and each direction is one row of the sheet:
+    sprite->setTextureRect(sf::IntRect({0, currentFrame * frameHeight}, {frameWidth, frameHeight}));
 }
 
 
@@ -58,7 +101,7 @@ bool Ghoul::hasFinishedPath() const {
 
 void Ghoul::takeDamage(int dmg) {
     health -= dmg;
-    if (health <= 0) isAlive = false;
+    if (health <= 0) alive = false;
 }
 
 
@@ -98,7 +141,7 @@ void Ghoul::render(sf::RenderWindow& window) {
 
 void Ghoul::setHealth(int hp) {
     health   = hp;
-    isAlive  = (health > 0);
+    alive  = (health > 0);
 }
 
 
@@ -124,11 +167,11 @@ float Ghoul::getSpeed() const {
 
 void Ghoul::reset() {
     health = maxHealth;
-    isAlive = true;
+    alive = true;
     distanceTraveled = 0.f;
     currentIdx  = 0;
     if (!path.empty()) {
-        currentPosition = tileToWorld(path[0]);
+        currentPosition = gridToPixelCenter(path[0]);
         sprite->setPosition(currentPosition);
     }
 }
@@ -140,14 +183,5 @@ void Ghoul::setKillReward(int gold) {
 
 
 bool Ghoul::checkIfAlive() {
-    return isAlive;
-}
-
-
-sf::Vector2f Ghoul::tileToWorld(const sf::Vector2i& t) const {
-    int row = t.x, col = t.y;
-    return {
-            row * tileSize.y + tileSize.y * 0.5f,
-            col * tileSize.x + tileSize.x * 0.5f
-    };
+    return alive;
 }
