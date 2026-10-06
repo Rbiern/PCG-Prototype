@@ -1,118 +1,155 @@
 #include "GameApp.hpp"
 
+#include <iostream>
+#include <SFML/System/Vector2.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Mouse.hpp>
+#include "states/Screen.hpp"
+#include "states/TitleScreen.hpp"
 
-GameApp::GameApp() : rm(ResourceManager::getInstance()) {
-    // Load window configurations from json file
-    if (!rm.loadJsonConfig("../../config.json")) {
-        std::cerr << "Creating Window Error: Cannot open JSON file.\n" << std::endl;
-        exit(-1);
-    }
-    config = &rm.getWindowData();
-    title = "Prototype";
-    isFullscreen = config->fullscreen;
-    if (config->antiAliasing) {
-        settings.antiAliasingLevel = config->antiAliasingLevel;
-    }
 
-    // Create window
-    if (config->fullscreen) {
-        window.create(sf::VideoMode::getDesktopMode(),
-                      title,
-                      sf::Style::Default,
-                      sf::State::Fullscreen,
-                      settings);
-    }
-    else {
-        window.create(sf::VideoMode(config->windowSize),
-                      title,
-                      sf::Style::Default,
-                      sf::State::Windowed,
-                      settings);
-    }
+GameApp::GameApp()
+    : appSettings(ASSET_CONFIG_PATH)
+    , resourceManager(ASSET_MANIFEST_PATH) {
+    appSettings.load();
+    window.initializeWindow(appSettings);
 
-    if (config->verticalSync) {
-        window.setVerticalSyncEnabled(true);
-    } else {
-        window.setFramerateLimit(config->frameRate);
-    }
-
-    if (!icon.loadFromFile("../../images/icon.png")) {
-        std::cerr << "Load Icon image error." << std::endl;
-    } else {
-        window.setIcon(icon);
-    }
-
-    // Set window state
-    setMenu(std::make_unique<StartUp>());
-    currentMenu->setGame(this);
+    pushState(new TitleScreen(*this));
 }
 
 
 GameApp::~GameApp() {
-    if (window.isOpen()) {
-        window.close();
+    if (appSettings.dirty) {
+        bool flag = appSettings.saveToDisk();
+    }
+
+    if (window.renderWindow.isOpen()) {
+        window.renderWindow.close();
+    }
+
+    for (Screen*& menu : stateStack) {
+        delete menu;
+    }
+    stateStack.clear();
+
+    while (!transitions.empty()) {
+        delete transitions.front().state;
+        transitions.pop();
     }
 }
 
 
-void GameApp::setMenu(std::unique_ptr<Menu> menu) {
-    currentMenu = std::move(menu);
-    if (currentMenu) {
-        currentMenu->setGame(this);
-    }
+void GameApp::pushState(Screen* state) {
+    transitions.push({TransitionType::Push, state});
 }
 
 
-void GameApp::executeGameApp() {
-    if (!rm.loadTowerData("../../towers.json")) {
-        std::cerr << "Creating UI Error: Cannot open JSON file.\n" << std::endl;
-        exit(-1);
+void GameApp::popState() {
+    transitions.push({TransitionType::Pop, nullptr});
+}
+
+
+void GameApp::switchState(Screen* state) {
+    transitions.push({TransitionType::Switch, state});
+}
+
+
+void GameApp::close() {
+    transitions.push({TransitionType::Close, nullptr});
+}
+
+
+ResourceManager& GameApp::resources() {
+    return resourceManager;
+}
+
+
+void GameApp::toggleFullScreen() {
+    window.toggleFullScreen();
+}
+
+
+int GameApp::execute() {
+    stateTransition();
+
+    if (stateStack.empty()) {
+        std::cerr << "Error: Game started with no states!" << std::endl;
+        return -1;
     }
-    float deltaTime;
 
+    sf::RenderWindow* renderWindow = &window.renderWindow;
 
-    // Game Loop: stops when window is not open
-    while (window.isOpen()) {
-        deltaTime = clock.restart().asSeconds();
+    while (renderWindow->isOpen() && !stateStack.empty()) {
+        const FrameTime time = timeCalculator.tick();
 
-
-        // Process input events
-        while (const std::optional event = window.pollEvent()) {
-            // Close window: exit
+        while (const auto event = renderWindow->pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
-                window.close();
+                renderWindow->close();
+                break;
             }
-            // Resize window: scale
-            else if (const auto* resized = event->getIf<sf::Event::Resized>()) {
-                config->windowSize = resized->size;
-                window.setView(sf::View(sf::FloatRect({0, 0}, {static_cast<float>(resized->size.x), static_cast<float>(resized->size.y)})));
-                sf::Vector2f newScale = sf::Vector2f{float(resized->size.x) / 1920.f, float(resized->size.y) / 1080.f};
-                currentMenu->resize(newScale);
+
+            if (event->is<sf::Event::Resized>()) {
+                window.updateView();
+                continue;
             }
-            // Fullscreen mode
-            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                if (keyPressed->scancode == sf::Keyboard::Scan::F11) {
-                    config->fullscreen = !isFullscreen;
-                    sf::RenderWindow desktop;
-                    (isFullscreen = !isFullscreen) ? window.create(sf::VideoMode(config->windowSize), title, sf::Style::Default, sf::State::Fullscreen, settings) : window.create(sf::VideoMode(config->windowSize), title, sf::Style::Default, sf::State::Windowed, settings);
-                    window.setView(sf::View(sf::FloatRect({0, 0}, {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)})));
-                    window.setVerticalSyncEnabled(config->verticalSync);
-                    window.setFramerateLimit(config->frameRate);
-                    window.setIcon(icon);
-                    currentMenu->resize({window.getSize().x / 1920.f, window.getSize().y / 1080.f});
-                }
-            }
-            // Other inputs
-            if (currentMenu->handleUserInput(*event)) {
-                window.close();
+
+            const sf::Vector2i mousePixel = sf::Mouse::getPosition(*renderWindow);
+            const sf::Vector2f mouseWorld = renderWindow->mapPixelToCoords(mousePixel);
+
+            if (stateStack.back()->handleUserInput(*this, *event, mouseWorld)) {
+                renderWindow->close();
+                break;
             }
         }
 
+        if (!renderWindow->isOpen()) {
+            break;
+        }
 
-        window.clear();                             // Clear screen
-        currentMenu->menuActionUpdate(deltaTime);   // Move in game time forward
-        currentMenu->render(window);                // Window state
-        window.display();                           // Update the window
+        renderWindow->clear();
+        stateStack.back()->update(time);
+        stateStack.back()->render(*renderWindow);
+        renderWindow->display();
+
+        stateTransition();
     }
-    rm.updateWindowConfig("../../config.json");
+
+    return 0;
+}
+
+
+void GameApp::stateTransition() {
+    while (!transitions.empty()) {
+        auto&[type, scene] = transitions.front();
+
+        switch (type) {
+            case TransitionType::Push:
+                stateStack.push_back(scene);
+                break;
+
+            case TransitionType::Pop:
+                if (!stateStack.empty()) {
+                    const Screen* previous = stateStack.back();
+                    delete previous;
+                    stateStack.pop_back();
+                }
+                break;
+
+            case TransitionType::Switch:
+                for (Screen*& menu : stateStack) {
+                    delete menu;
+                }
+                stateStack.clear();
+                if (scene != nullptr) {
+                    stateStack.push_back(scene);
+                }
+                break;
+
+            case TransitionType::Close:
+                window.renderWindow.close();
+                break;
+        }
+
+        transitions.pop();
+    }
 }

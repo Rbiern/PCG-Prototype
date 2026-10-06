@@ -1,34 +1,41 @@
 #pragma once
-#include <memory>
-#include <SFML/Graphics.hpp>
-#include "ResourceManager.hpp"
-#include "../states/Menu.hpp"
-#include "../states/StartUp.hpp"
-#include "../states/Home.hpp"
-#include "../states/Options.hpp"
-#include "../states/Squad.hpp"
-#include "../states/Creator.hpp"
-#include "../states/Level.hpp"
+
+#include <vector>
+#include <queue>
+#include "core/ApplicationSettings.hpp"
+#include "core/Window.hpp"
+#include "engine/time/TimeCalculator.hpp"
+#include "engine/assets/ResourceManager.hpp"
 
 
-class GameApp {
+class Screen;
+
+enum class TransitionType {Push, Pop, Switch, Close};
+struct Transition {TransitionType type; Screen* state;};
+
+class GameApp final {
 public:
-    GameApp();                                      // Constructor
-    ~GameApp();                                     // Destructor
-    void setMenu(std::unique_ptr<Menu> menu);       // Setter if you want to change the current menu
-    void executeGameApp();                          // Main loop function
+    explicit GameApp();
+    ~GameApp();
+    GameApp(const GameApp&) = delete;
+    GameApp& operator=(const GameApp&) = delete;
+
+    void pushState(Screen* state);
+    void popState();
+    void switchState(Screen* state);
+    void close();
+
+    ResourceManager& resources();
+    void toggleFullScreen();
+    int execute();
 
 private:
-    // Window setup
-    windowConfig* config;
-    std::string title;
-    sf::Image icon;
-    sf::ContextSettings settings;
-    sf::RenderWindow window;
-    bool isFullscreen;
-    // Window state and actions
-    std::unique_ptr<Menu> currentMenu;
-    sf::Clock clock;
-    // Miscellaneous
-    ResourceManager& rm;
+    void stateTransition();
+
+    ApplicationSettings appSettings;
+    Window window;
+    TimeCalculator timeCalculator;
+    ResourceManager resourceManager;
+    std::vector<Screen*> stateStack;
+    std::queue<Transition> transitions;
 };
