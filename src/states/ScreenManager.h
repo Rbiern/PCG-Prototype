@@ -6,8 +6,16 @@
 
 class Screen;
 
-enum class TransitionType {Push, Pop, ReplaceAll, Close};
-struct Transition {TransitionType type; Screen* state;};
+enum class TransitionType {
+    Push,
+    Pop,
+    ReplaceAll
+};
+
+struct Transition {
+    TransitionType type;
+    Screen* state;
+};
 
 class ScreenManager {
 public:
@@ -18,11 +26,11 @@ public:
 
     [[nodiscard]] Screen* activeScreen();
     [[nodiscard]] const Screen* activeScreen() const;
+    
     void stateTransition();
     void pushState(Screen* state);
     void popState();
     void replaceAll(Screen* state);
-    void close();
 
 private:
     std::vector<Screen*> stateStack;

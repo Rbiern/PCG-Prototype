@@ -30,34 +30,27 @@ void ScreenManager::stateTransition() {
         auto&[type, scene] = transitions.front();
 
         switch (type) {
-        case TransitionType::Push:
-            stateStack.push_back(scene);
-            break;
-
-        case TransitionType::Pop:
-            if (!stateStack.empty()) {
-                const Screen* previous = stateStack.back();
-                delete previous;
-                stateStack.pop_back();
-            }
-            break;
-
-        case TransitionType::ReplaceAll:
-            for (Screen*& menu : stateStack) {
-                delete menu;
-            }
-            stateStack.clear();
-            if (scene != nullptr) {
+            case TransitionType::Push:
                 stateStack.push_back(scene);
-            }
-            break;
+                break;
 
-        case TransitionType::Close:
-            for (Screen*& menu : stateStack) {
-                delete menu;
-            }
-            stateStack.clear();
-            break;
+            case TransitionType::Pop:
+                if (!stateStack.empty()) {
+                    const Screen* previous = stateStack.back();
+                    delete previous;
+                    stateStack.pop_back();
+                }
+                break;
+
+            case TransitionType::ReplaceAll:
+                for (Screen*& menu : stateStack) {
+                    delete menu;
+                }
+                stateStack.clear();
+                if (scene != nullptr) {
+                    stateStack.push_back(scene);
+                }
+                break;
         }
 
         transitions.pop();
@@ -77,9 +70,4 @@ void ScreenManager::popState() {
 
 void ScreenManager::replaceAll(Screen* state) {
     transitions.push({TransitionType::ReplaceAll, state});
-}
-
-
-void ScreenManager::close() {
-    transitions.push({TransitionType::Close, nullptr});
 }
