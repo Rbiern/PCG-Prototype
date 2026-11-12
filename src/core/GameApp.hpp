@@ -1,17 +1,12 @@
 #pragma once
 
-#include <vector>
-#include <queue>
 #include "core/ApplicationSettings.hpp"
-#include "core/Window.hpp"
 #include "engine/time/TimeCalculator.hpp"
 #include "engine/assets/ResourceManager.hpp"
+#include "states/Screen.hpp"
+#include "states/ScreenManager.h"
+#include "core/Window.hpp"
 
-
-class Screen;
-
-enum class TransitionType {Push, Pop, Switch, Close};
-struct Transition {TransitionType type; Screen* state;};
 
 class GameApp final {
 public:
@@ -20,22 +15,17 @@ public:
     GameApp(const GameApp&) = delete;
     GameApp& operator=(const GameApp&) = delete;
 
-    void pushState(Screen* state);
-    void popState();
-    void switchState(Screen* state);
-    void close();
-
-    ResourceManager& resources();
-    void toggleFullScreen();
+    void toggleFullscreen();
+    void closeApp();
     int execute();
 
 private:
-    void stateTransition();
+    ScreenContext makeScreenContext();
 
     ApplicationSettings appSettings;
-    Window window;
-    TimeCalculator timeCalculator;
     ResourceManager resourceManager;
-    std::vector<Screen*> stateStack;
-    std::queue<Transition> transitions;
+    TimeCalculator timeCalculator;
+    ScreenManager screenManager;
+    Window window;
+    bool closeRequested = false;
 };

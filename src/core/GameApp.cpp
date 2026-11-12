@@ -11,80 +11,64 @@
 GameApp::GameApp()
     : appSettings(ASSET_CONFIG_PATH)
     , resourceManager(ASSET_MANIFEST_PATH) {
-    appSettings.load();
     window.initializeWindow(appSettings);
-
-    pushState(new TitleScreen(*this));
+    screenManager.pushState(new TitleScreen(makeScreenContext()));
 }
 
 
 GameApp::~GameApp() {
-    if (appSettings.dirty) {
-        bool flag = appSettings.saveToDisk();
+    if (appSettings.dirty && !appSettings.saveToDisk()) {
+        std::cerr << "Could not save application settings" << std::endl;
     }
 
     if (window.renderWindow.isOpen()) {
         window.renderWindow.close();
     }
-
-    for (Screen*& menu : stateStack) {
-        delete menu;
-    }
-    stateStack.clear();
-
-    while (!transitions.empty()) {
-        delete transitions.front().state;
-        transitions.pop();
-    }
 }
 
 
-void GameApp::pushState(Screen* state) {
-    transitions.push({TransitionType::Push, state});
+ScreenContext GameApp::makeScreenContext() {
+    return {
+        resourceManager,
+        screenManager,
+        [this] { closeApp(); },
+        [this] { toggleFullscreen(); }
+    };
 }
 
 
-void GameApp::popState() {
-    transitions.push({TransitionType::Pop, nullptr});
-}
-
-
-void GameApp::switchState(Screen* state) {
-    transitions.push({TransitionType::Switch, state});
-}
-
-
-void GameApp::close() {
-    transitions.push({TransitionType::Close, nullptr});
-}
-
-
-ResourceManager& GameApp::resources() {
-    return resourceManager;
-}
-
-
-void GameApp::toggleFullScreen() {
+void GameApp::toggleFullscreen() {
     window.toggleFullScreen();
 }
 
 
-int GameApp::execute() {
-    stateTransition();
+void GameApp::closeApp() {
+    closeRequested = true;
+}
 
-    if (stateStack.empty()) {
+
+int GameApp::execute() {
+    screenManager.stateTransition();
+
+    if (!screenManager.activeScreen()) {
         std::cerr << "Error: Game started with no states!" << std::endl;
         return -1;
     }
 
     sf::RenderWindow* renderWindow = &window.renderWindow;
 
-    while (renderWindow->isOpen() && !stateStack.empty()) {
+    while (renderWindow->isOpen()) {
+        Screen* screen = screenManager.activeScreen();
+        if (screen == nullptr) {
+            break;
+        }
+
         const FrameTime time = timeCalculator.tick();
 
         while (const auto event = renderWindow->pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 renderWindow->close();
+                closeRequested = true;
                 break;
             }
 
@@ -96,60 +80,20 @@ int GameApp::execute() {
             const sf::Vector2i mousePixel = sf::Mouse::getPosition(*renderWindow);
             const sf::Vector2f mouseWorld = renderWindow->mapPixelToCoords(mousePixel);
 
-            if (stateStack.back()->handleUserInput(*this, *event, mouseWorld)) {
-                renderWindow->close();
-                break;
-            }
+            screen->handleEvent(*event, mouseWorld);
         }
 
-        if (!renderWindow->isOpen()) {
+        if (closeRequested) {
             break;
         }
 
+        screen->update(time);
         renderWindow->clear();
-        stateStack.back()->update(time);
-        stateStack.back()->render(*renderWindow);
+        screen->render(*renderWindow);
         renderWindow->display();
 
-        stateTransition();
+        screenManager.stateTransition();
     }
 
     return 0;
-}
-
-
-void GameApp::stateTransition() {
-    while (!transitions.empty()) {
-        auto&[type, scene] = transitions.front();
-
-        switch (type) {
-            case TransitionType::Push:
-                stateStack.push_back(scene);
-                break;
-
-            case TransitionType::Pop:
-                if (!stateStack.empty()) {
-                    const Screen* previous = stateStack.back();
-                    delete previous;
-                    stateStack.pop_back();
-                }
-                break;
-
-            case TransitionType::Switch:
-                for (Screen*& menu : stateStack) {
-                    delete menu;
-                }
-                stateStack.clear();
-                if (scene != nullptr) {
-                    stateStack.push_back(scene);
-                }
-                break;
-
-            case TransitionType::Close:
-                window.renderWindow.close();
-                break;
-        }
-
-        transitions.pop();
-    }
 }
