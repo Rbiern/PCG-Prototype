@@ -17,12 +17,17 @@ FrameTime TimeCalculator::tick() {
     const double rawDelta = static_cast<double>(clock.restart().asMicroseconds()) / 1'000'000.0;
     const double validDelta = std::isfinite(rawDelta) && rawDelta > 0.0 ? rawDelta : 0.0;
 
-    rawDeltaTime += validDelta;
+    realElapsed += validDelta;
 
     const float uiDelta = static_cast<float>(std::min(validDelta, MaxFrameDelta));
     const float gameDelta = paused ? 0.f : uiDelta * timeScale;
 
-    return {uiDelta, gameDelta, rawDeltaTime};
+    return {
+        static_cast<float>(validDelta),
+        uiDelta,
+        gameDelta,
+        realElapsed
+    };
 }
 
 

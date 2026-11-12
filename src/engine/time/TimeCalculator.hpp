@@ -4,11 +4,11 @@
 
 
 struct FrameTime {
-    float uiDelta = 0.f;
-    float gameDelta = 0.f;
+    float unscaledDelta = 0.f;  // Actual time since the previous tick.
+    float uiDelta = 0.f;        // Clamped, unaffected by pause.
+    float gameDelta = 0.f;      // Clamped, scaled, and affected by pause.
     double realElapsed = 0.0;
 };
-
 
 class TimeCalculator {
 public:
@@ -22,7 +22,7 @@ public:
 
 private:
     sf::Clock clock;
-    double rawDeltaTime = 0.0;
+    double realElapsed = 0.0;
     float timeScale = 1.f;
     bool paused = false;
 };
