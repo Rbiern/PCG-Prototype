@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <windows.h>
+#include <dwmapi.h>
 #include <SFML/Graphics/Image.hpp>
 #include "core/ApplicationSettings.hpp"
 
@@ -22,13 +23,26 @@ void Window::initializeWindow(ApplicationSettings& appSettings) {
     sf::ContextSettings contextSettings;
     contextSettings.antiAliasingLevel = settings->video.antiAliasingLevel;
 
-    const auto style = settings->video.fullscreen ? sf::Style::None : sf::Style::Default;
-    const auto state = settings->video.fullscreen ? sf::State::Fullscreen : sf::State::Windowed;
+    const auto style = settings->video.fullscreen
+        ? sf::Style::None
+        : sf::Style::Default;
+    const auto state = settings->video.fullscreen
+        ? sf::State::Fullscreen
+        : sf::State::Windowed;
     const auto mode = settings->video.fullscreen
         ? sf::VideoMode::getDesktopMode()
         : sf::VideoMode({settings->video.windowWidth, settings->video.windowHeight});
 
     renderWindow.create(mode, "Prototype", style, state, contextSettings);
+
+    constexpr DWM_WINDOW_CORNER_PREFERENCE corners = DWMWCP_DONOTROUND;
+    DwmSetWindowAttribute(
+        renderWindow.getNativeHandle(),
+        DWMWA_WINDOW_CORNER_PREFERENCE,
+        &corners,
+        sizeof(corners)
+    );
+
     renderWindow.setMinimumSize(sf::Vector2u{960u, 540u});
     renderWindow.setVerticalSyncEnabled(settings->video.verticalSync);
 
@@ -84,6 +98,7 @@ void Window::toggleFullScreen() {
     if (settings->video.fullscreen) {
         const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
         const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
         SetWindowLongPtr(hwnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
         SetWindowPos(hwnd, HWND_TOP, 0, 0, screenWidth, screenHeight, SWP_FRAMECHANGED);
     } else {
@@ -92,7 +107,14 @@ void Window::toggleFullScreen() {
         const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
         const int centerX = (screenWidth - static_cast<int>(settings->video.windowWidth)) / 2;
         const int centerY = (screenHeight - static_cast<int>(settings->video.windowHeight)) / 2;
-        SetWindowPos(hwnd, HWND_NOTOPMOST, centerX, centerY, settings->video.windowWidth, settings->video.windowHeight, SWP_FRAMECHANGED);
+
+        SetWindowPos(hwnd,
+            HWND_NOTOPMOST,
+            centerX,
+            centerY,
+            static_cast<int>(settings->video.windowWidth),
+            static_cast<int>(settings->video.windowHeight),
+            SWP_FRAMECHANGED);
     }
 
     updateView();
