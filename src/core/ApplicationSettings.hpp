@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <string>
 #include "infrastructure/json.hpp"
 
 
@@ -31,6 +30,7 @@ struct AudioSettings {
 
 
 struct GameplaySettings {
+    bool showFrameRate = false;
 };
 
 
@@ -44,13 +44,11 @@ struct ApplicationSettings {
     explicit ApplicationSettings(std::filesystem::path filePath);
     ~ApplicationSettings() = default;
     ApplicationSettings(const ApplicationSettings&) = delete;
-    ApplicationSettings& operator=(const ApplicationSettings&) = delete;;
+    ApplicationSettings& operator=(const ApplicationSettings&) = delete;
 
-    bool load();
+    [[nodiscard]] bool load();
     [[nodiscard]] bool saveToDisk();
 
 private:
-    static bool readSettings(const nlohmann::json& root, VideoSettings& video, AudioSettings& audio);
-    static bool readFileOneShot(const std::filesystem::path& inputPath, std::string& outPayload);
-    [[nodiscard]] bool writeFileAtomically(const std::string& serialized) const;
+    static bool readSettings(const nlohmann::json& root, VideoSettings& video, AudioSettings& audio, GameplaySettings& gameplay);
 };

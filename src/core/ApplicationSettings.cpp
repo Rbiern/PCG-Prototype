@@ -1,11 +1,10 @@
 #include <core/ApplicationSettings.hpp>
 
-#include <fstream>
 #include <iostream>
+#include <utility>
 #include <algorithm>
-#include <atomic>
-#include <Windows.h>
 #include <infrastructure/json.hpp>
+#include "engine/io/FileIO.hpp"
 
 
 ApplicationSettings::ApplicationSettings(std::filesystem::path filePath)
@@ -15,8 +14,10 @@ ApplicationSettings::ApplicationSettings(std::filesystem::path filePath)
 
 bool ApplicationSettings::load() {
     std::string payload;
-    if (!readFileOneShot(path, payload)) {
-        std::cerr << "Config file not found or unreadable, writing defaults: " << path << std::endl;
+    std::string error;
+
+    if (!FileIO::readFileOneShot(path, payload, FileIO::OneMebibyte, error)) {
+        std::cerr << "Failed to read config file: " << error << std::endl;
         return false;
     }
 
@@ -29,15 +30,18 @@ bool ApplicationSettings::load() {
 
         VideoSettings nextVideo{};
         AudioSettings nextAudio{};
+        GameplaySettings nextGameplay{};
 
         // Valid config values override defaults; missing or wrong-type values keep defaults.
         // Out-of-range values are clamped, and unsupported anti-aliasing levels are adjusted.
-        const bool repaired = readSettings(jsonFile, nextVideo, nextAudio);
+        const bool repaired = readSettings(jsonFile, nextVideo, nextAudio, nextGameplay);
+
         video = nextVideo;
         audio = nextAudio;
+        gameplay = nextGameplay;
         dirty = repaired;
-
         return true;
+
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Failed to parse config file, reverting to defaults: " << e.what() << std::endl;
         return false;
@@ -73,10 +77,17 @@ bool ApplicationSettings::saveToDisk() {
                     {"level", audio.uiSoundEffects.level}
                 }}
             }},
-            {"gameplay", nlohmann::json::object()}
+            {"gameplay", {
+                {"showFrameRate", gameplay.showFrameRate}
+            }}
         };
 
-        const bool saved = writeFileAtomically(jsonFile.dump(4));
+        std::string error;
+        const bool saved = FileIO::writeFileAtomically(path, jsonFile.dump(4), error);
+
+        if (!saved) {
+            std::cerr << "Failed to save config: " << error << std::endl;
+        }
         dirty = !saved;
         return saved;
 
@@ -88,7 +99,7 @@ bool ApplicationSettings::saveToDisk() {
 }
 
 
-bool ApplicationSettings::readSettings(const nlohmann::json& root, VideoSettings& video, AudioSettings& audio) {
+bool ApplicationSettings::readSettings(const nlohmann::json& root, VideoSettings& video, AudioSettings& audio, GameplaySettings& gameplay) {
     bool repaired = false;
 
     const auto object = [&](const nlohmann::json& parent, const char* key) -> const nlohmann::json* {
@@ -175,133 +186,9 @@ bool ApplicationSettings::readSettings(const nlohmann::json& root, VideoSettings
         channel(*node, "uiSoundEffects", audio.uiSoundEffects);
     }
 
+    if (const auto* node = object(root, "gameplay")) {
+        gameplay.showFrameRate = boolean(*node, "showFrameRate", gameplay.showFrameRate);
+    }
+
     return repaired;
-}
-
-
-bool ApplicationSettings::readFileOneShot(const std::filesystem::path& inputPath, std::string& outPayload) {
-    std::ifstream file(inputPath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {
-        return false;
-    }
-
-    const std::streamsize endPos = file.tellg();
-    if (endPos < 0) {
-        return false;
-    }
-
-    outPayload.resize(static_cast<std::size_t>(endPos));
-    file.seekg(0, std::ios::beg);
-
-    if (!outPayload.empty()) {
-        file.read(outPayload.data(), endPos);
-        if (!file.good()) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-
-bool ApplicationSettings::writeFileAtomically(const std::string& serialized) const {
-    std::error_code ec;
-    const std::filesystem::path destination = std::filesystem::absolute(path, ec);
-
-    if (ec) {
-        std::cerr << "Invalid config path: " << ec.message() << std::endl;
-        return false;
-    }
-
-    std::filesystem::create_directories(destination.parent_path(), ec);
-    if (ec) {
-        std::cerr << "Failed to create config directory: " << ec.message() << std::endl;
-        return false;
-    }
-
-    // CREATE_NEW prevents this save from overwriting another save's temp file.
-    static std::atomic<std::uint64_t> nextId{0};
-    std::filesystem::path tempPath;
-    HANDLE file = INVALID_HANDLE_VALUE;
-
-    for (int attempt = 0; attempt < 32; ++attempt) {
-        tempPath = destination;
-        tempPath += L".tmp." + std::to_wstring(GetCurrentProcessId()) + L"." + std::to_wstring(nextId.fetch_add(1));
-
-        file = CreateFileW(
-            tempPath.c_str(),
-            GENERIC_WRITE,
-            0,
-            nullptr,
-            CREATE_NEW,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr
-        );
-
-        if (file != INVALID_HANDLE_VALUE) {
-            break;
-        }
-
-        const DWORD error = GetLastError();
-        if (error != ERROR_FILE_EXISTS &&
-            error != ERROR_ALREADY_EXISTS) {
-            std::cerr << "Failed to create config temp file: "
-                      << std::error_code(static_cast<int>(error), std::system_category()).message()
-                      << std::endl;
-            return false;
-        }
-    }
-
-    if (file == INVALID_HANDLE_VALUE) {
-        std::cerr << "Could not find a unique config temp filename" << std::endl;
-        return false;
-    }
-
-    DWORD writeError = ERROR_SUCCESS;
-    std::size_t offset = 0;
-
-    while (offset < serialized.size()) {
-        const std::size_t remaining = serialized.size() - offset;
-        const DWORD requested = std::min<std::size_t>(remaining, std::numeric_limits<DWORD>::max());
-
-        DWORD written = 0;
-        if (!WriteFile(file, serialized.data() + offset, requested, &written, nullptr) || written == 0) {
-            writeError = GetLastError();
-            if (writeError == ERROR_SUCCESS) {
-                writeError = ERROR_WRITE_FAULT;
-            }
-            break;
-        }
-
-        offset += written;
-    }
-
-    if (writeError == ERROR_SUCCESS && !FlushFileBuffers(file)) {
-        writeError = GetLastError();
-    }
-
-    if (!CloseHandle(file) && writeError == ERROR_SUCCESS) {
-        writeError = GetLastError();
-    }
-
-    if (writeError != ERROR_SUCCESS) {
-        std::cerr << "Failed writing config temp file: "
-                  << std::error_code(static_cast<int>(writeError), std::system_category()).message()
-                  << std::endl;
-        std::filesystem::remove(tempPath, ec);
-        return false;
-    }
-
-    // The temp file is in the destination directory, so this stays
-    // on the same volume. The old config is never renamed away first.
-    if (!MoveFileExW(tempPath.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-        const DWORD error = GetLastError();
-        std::cerr << "Failed replacing config: "
-                  << std::error_code(static_cast<int>(error), std::system_category()).message()
-                  << std::endl;
-        std::filesystem::remove(tempPath, ec);
-        return false;
-    }
-
-    return true;
 }
