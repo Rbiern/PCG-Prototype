@@ -7,6 +7,8 @@
 
 
 namespace FileIO {
+    inline constexpr std::size_t OneMebibyte = 1024 * 1024;
+
     [[nodiscard]] bool readFileOneShot(
         const std::filesystem::path& inputPath,
         std::string& outPayload,
