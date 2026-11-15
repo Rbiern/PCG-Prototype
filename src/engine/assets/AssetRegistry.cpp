@@ -1,17 +1,19 @@
 #include "AssetRegistry.hpp"
 
-#include <fstream>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+#include "engine/io/FileIO.hpp"
 
 
 AssetRegistry::AssetRegistry(const std::filesystem::path& manifestPath) {
     try {
         const std::filesystem::path manifest = std::filesystem::canonical(manifestPath);
-        std::ifstream stream(manifest);
-        if (!stream) {
-            throw std::runtime_error("Cannot open manifest");
+        std::string payload;
+        std::string error;
+
+        if (!FileIO::readFileOneShot(manifest, payload, FileIO::OneMebibyte, error)) {
+            throw std::runtime_error(error);
         }
 
         // Reject duplicate keys before the parser overwrites an earlier value.
@@ -30,7 +32,7 @@ AssetRegistry::AssetRegistry(const std::filesystem::path& manifestPath) {
             return true;
         };
 
-        const auto root = nlohmann::json::parse(stream, callback);
+        const auto root = nlohmann::json::parse(payload, callback);
         if (!root.is_object()) {
             throw std::runtime_error("Manifest must be an object");
         }
