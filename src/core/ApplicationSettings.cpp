@@ -3,8 +3,10 @@
 #include <iostream>
 #include <utility>
 #include <algorithm>
-#include <infrastructure/json.hpp>
+#include "infrastructure/json.hpp"
 #include "engine/io/FileIO.hpp"
+#include "engine/io/JsonCallbacks.hpp"
+#include "engine/io/JsonFields.hpp"
 
 
 ApplicationSettings::ApplicationSettings(std::filesystem::path filePath)
@@ -18,13 +20,15 @@ bool ApplicationSettings::load() {
 
     if (!FileIO::readFileOneShot(path, payload, FileIO::OneMebibyte, error)) {
         std::cerr << "Failed to read config file: " << error << std::endl;
+        dirty = true;
         return false;
     }
 
     try {
-        const nlohmann::json jsonFile = nlohmann::json::parse(payload);
+        const nlohmann::json jsonFile = nlohmann::json::parse(payload, JsonCallbacks::makeValidationCallback());
         if (!jsonFile.is_object()) {
             std::cerr << "Config root must be a JSON object, reverting to defaults: " << path << std::endl;
+            dirty = true;
             return false;
         }
 
@@ -43,7 +47,13 @@ bool ApplicationSettings::load() {
         return true;
 
     } catch (const nlohmann::json::exception& e) {
-        std::cerr << "Failed to parse config file, reverting to defaults: " << e.what() << std::endl;
+        std::cerr << "Invalid JSON in config file '" << path << "': " << e.what() << std::endl;
+        dirty = true;
+        return false;
+
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Config validation failed for '" << path << "': " << e.what() << std::endl;
+        dirty = true;
         return false;
     }
 }
@@ -102,92 +112,59 @@ bool ApplicationSettings::saveToDisk() {
 bool ApplicationSettings::readSettings(const nlohmann::json& root, VideoSettings& video, AudioSettings& audio, GameplaySettings& gameplay) {
     bool repaired = false;
 
-    const auto object = [&](const nlohmann::json& parent, const char* key) -> const nlohmann::json* {
-        const auto it = parent.find(key);
-        if (it != parent.end() && it->is_object()) {
-            return &*it;
-        }
-        repaired = true;
-        return nullptr;
-    };
+    if (const auto* node = JsonFields::readObject(root, "video").valueOr(nullptr, &repaired)) {
+        video.fullscreen = JsonFields::readBoolean(*node, "fullscreen").valueOr(video.fullscreen, &repaired);
+        video.verticalSync = JsonFields::readBoolean(*node, "verticalSync").valueOr(video.verticalSync, &repaired);
+        video.frameRate = JsonFields::readUInt32(*node, "frameRate", 30u, 360u).valueOr(video.frameRate, &repaired);
 
-    const auto boolean = [&](const nlohmann::json& parent, const char* key, bool fallback) -> bool {
-        const auto it = parent.find(key);
-        if (it != parent.end() && it->is_boolean()) {
-            return it->get<bool>();
-        }
-        repaired = true;
-        return fallback;
-    };
-
-    const auto number = [&](const nlohmann::json& parent, const char* key, std::uint32_t fallback, std::uint32_t minimum, std::uint32_t maximum) -> std::uint32_t {
-        const auto it = parent.find(key);
-        if (it == parent.end() || !it->is_number_integer()) {
-            repaired = true;
-            return fallback;
-        }
-
-        if (it->is_number_unsigned()) {
-            const auto value = it->get<std::uint64_t>();
-            const auto bounded = std::clamp(value, static_cast<std::uint64_t>(minimum), static_cast<std::uint64_t>(maximum));
-
-            if (bounded != value) {
-                repaired = true;
-            }
-            return static_cast<std::uint32_t>(bounded);
-        }
-
-        const auto value = it->get<std::int64_t>();
-        const auto bounded = std::clamp(value, static_cast<std::int64_t>(minimum), static_cast<std::int64_t>(maximum));
-
-        if (bounded != value) {
-            repaired = true;
-        }
-        return static_cast<std::uint32_t>(bounded);
-    };
-
-    const auto channel = [&](const nlohmann::json& parent, const char* key, AudioChannelSettings& target) -> void {
-        if (const auto* node = object(parent, key)) {
-            target.enabled = boolean(*node, "enabled", target.enabled);
-            target.level = number(*node, "level", target.level, 0u, 100u);
-        }
-    };
-
-    if (const auto* node = object(root, "video")) {
-        video.fullscreen = boolean(*node, "fullscreen", video.fullscreen);
-        video.verticalSync = boolean(*node, "verticalSync", video.verticalSync);
-        video.frameRate = number(*node, "frameRate", video.frameRate, 30u, 360u);
-
-        const auto requestedAA = number(*node, "antiAliasingLevel", video.antiAliasingLevel, 0u, 16u);
         constexpr std::array<std::uint32_t, 5> supportedAA{0u, 2u, 4u, 8u, 16u};
 
-        const auto closest = std::min_element(supportedAA.begin(), supportedAA.end(), [requestedAA](std::uint32_t a, std::uint32_t b) -> bool {
-            const auto distance = [requestedAA](std::uint32_t level) -> std::uint32_t {
-                return level > requestedAA
-                    ? level - requestedAA
-                    : requestedAA - level;
-            };
-            return distance(a) < distance(b);
-        });
+        uint32_t requestedAA = JsonFields::readUInt32(*node, "antiAliasingLevel", 0u, 16u).valueOr(video.antiAliasingLevel, &repaired);
+        uint32_t closest = supportedAA.front();
+        uint32_t closestDistance = requestedAA;
 
-        video.antiAliasingLevel = *closest;
-        if (*closest != requestedAA) repaired = true;
+        for (const auto level : supportedAA) {
+            const auto distance = level > requestedAA
+                ? level - requestedAA
+                : requestedAA - level;
 
-        if (const auto* resolution = object(*node, "resolution")) {
-            video.windowWidth = number(*resolution, "width", video.windowWidth, 960u, 7680u);
-            video.windowHeight = number(*resolution, "height", video.windowHeight, 540u, 4320u);
+            if (distance < closestDistance) {
+                closest = level;
+                closestDistance = distance;
+            }
+        }
+
+        video.antiAliasingLevel = closest;
+
+        if (closest != requestedAA) {
+            repaired = true;
+        }
+
+        if (const auto* resolution = JsonFields::readObject(*node, "resolution").valueOr(nullptr, &repaired)) {
+            video.windowWidth = JsonFields::readUInt32(*resolution, "width", 960u, 7680u).valueOr(video.windowWidth, &repaired);
+            video.windowHeight = JsonFields::readUInt32(*resolution, "height", 540u, 4320u).valueOr(video.windowHeight, &repaired);
         }
     }
 
-    if (const auto* node = object(root, "audio")) {
-        audio.masterVolume = number(*node, "masterVolume", audio.masterVolume, 0u, 100u);
-        channel(*node, "music", audio.music);
-        channel(*node, "soundEffects", audio.soundEffects);
-        channel(*node, "uiSoundEffects", audio.uiSoundEffects);
+    if (const auto* node = JsonFields::readObject(root, "audio").valueOr(nullptr, &repaired)) {
+        audio.masterVolume = JsonFields::readUInt32(*node, "masterVolume", 0u, 100u).valueOr(audio.masterVolume, &repaired);
+
+        const std::pair<const char*, AudioChannelSettings*> channels[]{
+            {"music", &audio.music},
+            {"soundEffects", &audio.soundEffects},
+            {"uiSoundEffects", &audio.uiSoundEffects}
+        };
+
+        for (const auto& [name, target] : channels) {
+            if (const auto* channel = JsonFields::readObject(*node, name).valueOr(nullptr, &repaired)) {
+                target->enabled = JsonFields::readBoolean(*channel, "enabled").valueOr(target->enabled, &repaired);
+                target->level = JsonFields::readUInt32(*channel, "level", 0u, 100u).valueOr(target->level, &repaired);
+            }
+        }
     }
 
-    if (const auto* node = object(root, "gameplay")) {
-        gameplay.showFrameRate = boolean(*node, "showFrameRate", gameplay.showFrameRate);
+    if (const auto* node = JsonFields::readObject(root, "gameplay").valueOr(nullptr, &repaired)) {
+        gameplay.showFrameRate = JsonFields::readBoolean(*node, "showFrameRate").valueOr(gameplay.showFrameRate, &repaired);
     }
 
     return repaired;

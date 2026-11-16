@@ -1,9 +1,9 @@
 #include "AssetRegistry.hpp"
 
 #include <stdexcept>
-#include <unordered_set>
-#include <vector>
+#include "infrastructure/json.hpp"
 #include "engine/io/FileIO.hpp"
+#include "engine/io/JsonCallbacks.hpp"
 
 
 AssetRegistry::AssetRegistry(const std::filesystem::path& manifestPath) {
@@ -16,23 +16,7 @@ AssetRegistry::AssetRegistry(const std::filesystem::path& manifestPath) {
             throw std::runtime_error(error);
         }
 
-        // Reject duplicate keys before the parser overwrites an earlier value.
-        std::vector<std::unordered_set<std::string>> objectKeys;
-        auto callback = [&objectKeys](int, nlohmann::json::parse_event_t event, nlohmann::json& value) -> bool {
-            if (event == nlohmann::json::parse_event_t::object_start) {
-                objectKeys.emplace_back();
-            } else if (event == nlohmann::json::parse_event_t::key) {
-                const std::string key = value.get<std::string>();
-                if (!objectKeys.back().insert(key).second) {
-                    throw std::runtime_error("Duplicate JSON key: '" + key + "'");
-                }
-            } else if (event == nlohmann::json::parse_event_t::object_end) {
-                objectKeys.pop_back();
-            }
-            return true;
-        };
-
-        const auto root = nlohmann::json::parse(payload, callback);
+        const auto root = nlohmann::json::parse(payload, JsonCallbacks::makeValidationCallback());
         if (!root.is_object()) {
             throw std::runtime_error("Manifest must be an object");
         }
@@ -45,6 +29,7 @@ AssetRegistry::AssetRegistry(const std::filesystem::path& manifestPath) {
 
         textures = readSection(root, "textures", manifest.parent_path());
         fonts = readSection(root, "fonts", manifest.parent_path());
+
     } catch (const std::exception& error) {
         throw std::runtime_error("Asset manifest '" + manifestPath.string() + "': " + error.what());
     }
@@ -105,6 +90,7 @@ AssetRegistry::PathMap AssetRegistry::readSection(const nlohmann::json& root, co
         if (!std::filesystem::is_regular_file(resolved, error) || error) {
             throw std::runtime_error(context + " is not a readable regular-file path: " + resolved.string());
         }
+
         paths.emplace(item.key(), resolved);
     }
     return paths;
