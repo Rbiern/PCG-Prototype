@@ -13,25 +13,25 @@ namespace {
 }
 
 
-void Window::initializeWindow(ApplicationSettings& appSettings) {
+void Window::initializeWindow(VideoSettings& vidSettings) {
     if (settings != nullptr) {
         throw std::logic_error("Window is already initialized");
     }
 
-    settings = &appSettings;
+    settings = &vidSettings;
 
     sf::ContextSettings contextSettings;
-    contextSettings.antiAliasingLevel = settings->video.antiAliasingLevel;
+    contextSettings.antiAliasingLevel = settings->antiAliasingLevel;
 
-    const auto style = settings->video.fullscreen
+    const auto style = settings->fullscreen
         ? sf::Style::None
         : sf::Style::Default;
-    const auto state = settings->video.fullscreen
+    const auto state = settings->fullscreen
         ? sf::State::Fullscreen
         : sf::State::Windowed;
-    const auto mode = settings->video.fullscreen
+    const auto mode = settings->fullscreen
         ? sf::VideoMode::getDesktopMode()
-        : sf::VideoMode({settings->video.windowWidth, settings->video.windowHeight});
+        : sf::VideoMode({settings->windowWidth, settings->windowHeight});
 
     renderWindow.create(mode, "Prototype", style, state, contextSettings);
 
@@ -44,10 +44,10 @@ void Window::initializeWindow(ApplicationSettings& appSettings) {
     );
 
     renderWindow.setMinimumSize(sf::Vector2u{960u, 540u});
-    renderWindow.setVerticalSyncEnabled(settings->video.verticalSync);
+    renderWindow.setVerticalSyncEnabled(settings->verticalSync);
 
-    if (!settings->video.verticalSync) {
-        renderWindow.setFramerateLimit(settings->video.frameRate);
+    if (!settings->verticalSync) {
+        renderWindow.setFramerateLimit(settings->frameRate);
     }
 
     sf::Image icon;
@@ -91,11 +91,10 @@ void Window::updateView() {
 
 
 void Window::toggleFullScreen() {
-    settings->video.fullscreen = !settings->video.fullscreen;
-    settings->dirty = true;
+    settings->fullscreen = !settings->fullscreen;
     HWND hwnd = renderWindow.getNativeHandle();
 
-    if (settings->video.fullscreen) {
+    if (settings->fullscreen) {
         const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
         const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
@@ -105,15 +104,15 @@ void Window::toggleFullScreen() {
         SetWindowLongPtr(hwnd, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
         const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
         const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-        const int centerX = (screenWidth - static_cast<int>(settings->video.windowWidth)) / 2;
-        const int centerY = (screenHeight - static_cast<int>(settings->video.windowHeight)) / 2;
+        const int centerX = (screenWidth - static_cast<int>(settings->windowWidth)) / 2;
+        const int centerY = (screenHeight - static_cast<int>(settings->windowHeight)) / 2;
 
         SetWindowPos(hwnd,
             HWND_NOTOPMOST,
             centerX,
             centerY,
-            static_cast<int>(settings->video.windowWidth),
-            static_cast<int>(settings->video.windowHeight),
+            static_cast<int>(settings->windowWidth),
+            static_cast<int>(settings->windowHeight),
             SWP_FRAMECHANGED);
     }
 

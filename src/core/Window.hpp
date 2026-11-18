@@ -4,21 +4,23 @@
 #include <SFML/Graphics/View.hpp>
 
 
-struct ApplicationSettings;
+class GameApp;
+struct VideoSettings;
 
 class Window final {
+    friend class GameApp;
+
 public:
     explicit Window() = default;
     Window(const Window&) = delete;
     Window& operator=(const Window&) = delete;
 
-    void initializeWindow(ApplicationSettings& appSettings);
+    void initializeWindow(VideoSettings& vidSettings);
     void updateView();
     void toggleFullScreen();
 
-    sf::RenderWindow renderWindow;
-
 private:
-    ApplicationSettings* settings = nullptr;
+    sf::RenderWindow renderWindow;
+    VideoSettings* settings = nullptr;
     sf::View view;
 };
