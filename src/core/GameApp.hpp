@@ -1,11 +1,12 @@
 #pragma once
 
 #include "core/ApplicationSettings.hpp"
-#include "engine/time/TimeCalculator.hpp"
 #include "engine/assets/ResourceManager.hpp"
+#include "engine/audio/SoundEngine.hpp"
+#include "engine/time/TimeCalculator.hpp"
+#include "core/Window.hpp"
 #include "states/Screen.hpp"
 #include "states/ScreenManager.h"
-#include "core/Window.hpp"
 
 
 class GameApp final {
@@ -24,8 +25,9 @@ private:
 
     ApplicationSettings appSettings;
     ResourceManager resourceManager;
+    SoundEngine soundEngine;
     TimeCalculator timeCalculator;
-    ScreenManager screenManager;
     Window window;
+    ScreenManager screenManager;
     bool closeRequested = false;
 };
